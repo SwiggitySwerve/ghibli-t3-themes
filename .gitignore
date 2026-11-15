@@ -1,0 +1,5 @@
+__pycache__/
+out/
+scratch_laputa_robot/
+# Film stills and third-party reference images are kept locally only
+refs/
