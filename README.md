@@ -9,4 +9,4 @@ Personal fan-art themes: each one sets T3 Code's chat background to an animated 
 - `lib.py`: shared pixel-art helpers. `BRIEF.md`: the rules every scene follows.
 - `saved/`: snapshots, including the shelved Slag Ravine scene.
 
-Status: Spirited Away, Totoro, Ponyo, Kiki, Howl, Nausicaä and Mononoke done; Castle in the Sky in review; The Boy and the Heron and The Wind Rises paused; Slag Ravine shelved.
+Status: Spirited Away, Totoro, Ponyo, Kiki, Howl, Nausicaä, Mononoke and Castle in the Sky done; The Boy and the Heron and The Wind Rises paused; Slag Ravine shelved.

@@ -5,8 +5,8 @@ A 320x180 canvas. Nearly everything is a small palette PNG nested in the SVG (a 
 pixel than paths, and each layer can move or be passed behind). Back to front:
 
   draw()      sky bands, a hazed cloud bank and the Dragon's Nest storm far off (the build encodes this one)
-  far         the Goliath, lightning in the storm, a high cloud streak, a far swarm of soldier robots, and (in
-              front of the cumulus, behind the island) one soldier robot flying home to Laputa
+  far         the Goliath, lightning in the storm, a high cloud streak, and (in front of the cumulus, behind
+              the island) a soldier robot flying home to Laputa
   middle()    cumulus towers, the cloud sea, the knoll with its ruins, a fallen robot, a nest, flowers
   island()    Laputa: crown, trunk and roots, ring walls with arcades, towers and gardens, the dark underside.
               It floats on a slow two-way drift, and its gulls and glowing core ride with it
@@ -23,8 +23,8 @@ only open sky, a low haze bank, cloud sea and grass.
 Motion is CSS transform/opacity only, in whole-pixel steps().
 - Ambient loops change on a shared half-second grid, so the image is redrawn about twice a second.
 - A "moment" is parked off-canvas (or at opacity 0) and its keyframes hold for most of the cycle, e.g.
-  `15%,to{...}`: nothing changes, so nothing is redrawn, until its turn comes round. The flapping of
-  wings is a half-turn per step driven by the same held keyframes, so it stops while parked too.
+  `15%,to{...}`: nothing changes, so nothing is redrawn, until its turn comes round. The pigeons'
+  flapping is a half-turn per step driven by the same held keyframes, so it stops while parked too.
 - One day and night take 240 s. Everything is painted in daylight colours; night is a multiply wash laid
   over the whole picture (a warm one at dusk and dawn), with the lights that should keep their glow drawn
   above it: stars, moon, the island's windows and core, the crystal, the robot's eyes.
@@ -194,10 +194,15 @@ def volume(cv, lumps, tones, cuts, soft=4, sharp=.6, sink=.25, base=None, light=
                 cv.set(x, y, tones[min(sum(i < c for c in cuts), len(tones) - 1)])
 
 
-def cloud(lumps, w, h, tones, seed, base=None):
-    cv = Canvas(w, h)
-    volume(cv, puffs(lumps, seed), tones, CUTS[:len(tones) - 1], soft=3, base=base)
-    return cv
+def cloud(lumps, tones, seed, x, y, attrs=""):
+    """A drifting cloud as an <image>, its lumps' own origin at (x, y). The bitmap is fitted to the lumps with
+    their puffs, so nothing is cut off square by its edge (it shows when a cloud crosses the island's dark keel)."""
+    ps = puffs(lumps, seed)
+    x0, y0 = (math.floor(min(c[i] - c[2] for c in ps)) for i in (0, 1))
+    x1, y1 = (math.ceil(max(c[i] + c[2] for c in ps)) for i in (0, 1))
+    cv = Canvas(x1 - x0, y1 - y0)
+    volume(cv, [(cx - x0, cy - y0, r) for cx, cy, r in ps], tones, CUTS[:len(tones) - 1], soft=3)
+    return img(cv, x + x0, y + y0, attrs)
 
 
 # ------------------------------------------------------------------ sky and far clouds
@@ -570,19 +575,23 @@ GOLIATH = [                 # the Goliath, bow to the right, hazed by distance
 ]
 OPAL = {"h": "#8196c6", "H": "#6b80b4", "D": "#566a9e", "f": "#566a9e", "t": "#6b80b4", "b": "#48598c",
         "w": "#c4d2ee", "p": "#a9bbe0"}
-FLAP = [                    # a flaptter, Dola's pink braids streaming
-    "...........pp...........",
-    ".........ppsss.w........",
-    "t.......hhhhhhhww.......",
-    "tt....hhhhhHHHHHHHh.....",
-    "ttthhhhhhHHHHHHHHHHkh...",
-    ".tt.rrrrrrrrrrrrrrrhh...",
-    "........dddddddddddd....",
-    "..........d......d......",
-    ".........ddd....ddd.....",
+FLAP = [                    # a flaptter, nose to the right. The tall bell-shaped rust engine pod is most of it: a
+    "................hhhh......",    # rounded top, a nose sloping down to the keel's front, a dark porthole on the
+    "..............hhhhhhhH....",    # nose, three vent slots in its side, a seam along its base and a knob at each
+    ".............hhhhhhhhHH...",    # lower corner. Under it is a short, deep, angular red keel that runs back just
+    "............hhhhhhhhkkH...",    # far enough to be a footboard, where Dola crouches at the handlebar with her
+    "pp..ss.....hhhhhhhhhkkHH..",    # pink braids streaming behind
+    ".pppsss....hhkhkhkhhhhHH..",
+    "....bbbb...hhkhkhkhhhhHHH.",
+    "....bbbbbHHhhkhkhkhhhhHHH.",
+    "....bbbb...hhhhhhhhhhhHHHH",
+    ".....bbb..oHHHHHHHHHHHHHHo",
+    "...rrrrrrrrrrrrrrrrrrrrrr.",
+    ".....RRRRRRRRRRRRRRRRRRR..",
+    "........RRRRRRRRRRRRRR....",
 ]
-FPAL = {"h": "#c89858", "H": "#a87040", "r": "#b8423a", "d": WD[1], "t": "#a87040", "p": PINK,
-        "s": SK[0], "w": "#cfe8f4", "k": GOLD}
+FPAL = {"h": "#d47858", "H": "#a85440", "o": "#e89a78", "k": WD[1], "r": "#d03a3c", "R": "#a02c38", "p": PINK,
+        "s": SK[0], "b": "#3a4a8a"}
 FOX = [
     ".e.e....",
     ".ooo..tt",
@@ -613,10 +622,15 @@ def flock(pts):
     return cv
 
 
-def wings(x, y):
-    """A flaptter's four wings raised, for the craft whose image is at (x, y). A half turn about the
-    bottom of this shape (the wing roots) swings them down behind the hull."""
-    return f"<path class='lp-w' d='M{x + 4} {y - 4}.5h3m-2 1h4m-2 1h4m-2 1h3m4 0h2m-1-1h3m-2-1h4m-3-1h3'/>"
+def fan(x, y, far=False):
+    """A flaptter's beating wings on one side, for the craft whose image is at (x, y): a fan of two pale streaks, one
+    steep and one shallow, from the root, where the pod's base meets the keel at the middle of the hull. The far
+    fan slants up and forward and is drawn behind the hull, fainter, so only what sticks out past the pod shows;
+    the near one is its mirror image through the root, down and back, drawn over the keel and footboard. Their
+    shape never changes: they only buzz a pixel to and fro (see lp-mw)."""
+    if far:
+        return f"M{x + 16} {y + 9}.5h1{'m0-1h1' * 8}m-8 8h3{'m0-1h3' * 3}"
+    return f"M{x + 15} {y + 10}.5h1{'m-2 1h1' * 6}m2-6h3{'m-6 1h3' * 3}"
 
 
 SOLDIER = [                 # a soldier robot in flight (drawn banking west, used mirrored): its arms are its wings, a row
@@ -634,58 +648,7 @@ SOLDIER = [                 # a soldier robot in flight (drawn banking west, use
     "....................kkbkbb..",
     "......................bb.bb.",
 ]
-VPAL = {"b": "#b8605a", "k": "#6a3438", "v": "#b4a4e6", "t": "#e2c27c", "r": "#ff4433"}     # the film's rust-rose
-SWARM = [                   # far-off soldiers seen from below, as in the film: stick figures (arms out, a body dot,
-    (0, 7, ["...........+.",          # legs trailing) at different sizes and angles, one curled into a ball.
-            "..........##.",          # '#' limbs, 'o' the dark body dot, '+' the pixels that come and go as arms flex
-            ".......###...",
-            "....##o#.....",
-            ".###.##......",
-            "#.....##.....",
-            "+......#....."]),
-    (20, -1, ["+.......+",
-              "####o####",
-              "...###...",
-              "....#....",
-              "....#...."]),
-    (36, 12, ["#.....#",
-              ".#...#.",
-              "..#o#..",
-              "...#...",
-              "...#..."]),
-    (16, 18, [".##.",
-              "####",
-              ".##."]),
-    (48, 2, [".#...",
-             ".#...",
-             "#o##.",
-             ".#...",
-             ".#..."]),
-    (30, 20, ["######",
-              "..o#..",
-              "...#.."]),
-]
-QX, QY = 344, 42                     # the swarm's top left, parked off-canvas to the east
-
-
-def rows(ch):
-    """Every run of `ch` in the swarm, as the d of one stroked path."""
-    d, px, py = "", 0, 0
-    for fx, fy, art_ in SWARM:
-        for j, row in enumerate(art_):
-            i = 0
-            while i < len(row):
-                n = 0
-                while i + n < len(row) and row[i + n] == ch:
-                    n += 1
-                if n:
-                    x, y = QX + fx + i, QY + fy + j
-                    d += f"m{x - px} {y - py}h{n}" if d else f"M{x} {y}.5h{n}"
-                    px, py = x + n, y
-                i += n or 1
-    return d.replace(" -", "-")
-
-
+VPAL = {"b": RB[1], "k": RB[3], "v": "#b4a4e6", "t": "#e2c27c", "r": "#ff4433"}     # the garden robot's body tones
 VX, VY = -360, 0                     # parked off-canvas to the west; its flight ends at 240, 80, behind the island
 
 
@@ -713,12 +676,8 @@ LAYERS = [
      + "<path class='lp-N' stroke='#ffd' d='M-62 76.5v5m-1 0v5m-1 0v5m-1 0v5m41-20v5m1 0v5m1 0v5m1 0v5'/></g>"),
     ("lightning", "<path class='lp-bo' stroke='#fff' d='M64 47.5h2m-2 1h2m-3 1h2m-3 1h2m-3 1h4m-2 1h2m-3 1h2m-3 1h2m-2 1h1m-2 1h1"
                   "m13-11h2m-3 1h2m-3 1h3m-2 1h1m-2 1h1'/>"),
-    ("cloud_a", img(cloud([(5, 8, 3), (11, 7, 4), (18, 7, 5), (26, 6, 5), (34, 7, 6), (43, 6, 5), (51, 7, 5),
-                           (58, 8, 4), (64, 9, 3)], 70, 14, C[:3], 4), -90, 66, " class='lp-a'")),
-    # --- a swarm of soldier robots, tiny and far off, on the same three-leg flight late in the night and into
-    #     the dawn: limbs, flexing arm tips and body dots are three stroked paths of pixel rows
-    ("swarm", "<g class='lp-t' style='animation-delay:126s' stroke='#b65'>"
-              f"<path d='{rows('#')}'/><path class='lp-s' d='{rows('+')}'/><path stroke='#422' d='{rows('o')}'/></g>"),
+    ("cloud_a", cloud([(5, 8, 3), (11, 7, 4), (18, 7, 5), (26, 6, 5), (34, 7, 6), (43, 6, 5), (51, 7, 5),
+                       (58, 8, 4), (64, 9, 3)], C[:3], 4, -90, 66, " class='lp-a'")),
     ("middle", img(middle(), 0, 0)),
     # --- a soldier robot comes home at dusk, behind the island: in fast from the left, high over the garden, down
     #     across the sky and in behind Laputa's walls, where it stays hidden (at every point of the island's drift)
@@ -731,21 +690,21 @@ LAYERS = [
     ("island", "<g class='lp-o'><g class='lp-i'>" + img(island(), IX, IY)
      + "<g class='lp-e'>" + img(flock([(0, 0), (9, -4)]), 243, 28, " class='lp-q'") + "</g>"
      "<g class='lp-e' style='animation-delay:-9.5s'>" + img(flock([(6, -2)]), 256, 42, " class='lp-q'") + "</g></g></g>"),
-    # --- cloud lapping the island's lower left (Laputa is rising out of the cumulus), and a flat-based puff
-    ("wisp", img(cloud([(9, 16, 7), (21, 12, 9), (35, 15, 8), (47, 18, 6), (28, 21, 8), (14, 23, 7), (41, 24, 7)],
-                       56, 24, C[:4], 7, base=22), 189, 98)),
-    ("cloud_b", img(cloud([(9, 14, 7), (20, 10, 9), (33, 12, 8), (44, 15, 6), (27, 16, 8)], 52, 20, C[:4], 6, base=18),
-                    -90, 96, " class='lp-b'")),
+    # --- cloud lapping the island's lower left (Laputa is rising out of the cumulus), and a drifting puff
+    ("wisp", cloud([(9, 16, 7), (21, 12, 9), (35, 15, 8), (47, 18, 6), (28, 19, 7)], C[:4], 7, 189, 98)),
+    ("cloud_b", cloud([(9, 14, 7), (20, 10, 9), (33, 12, 8), (44, 15, 6), (27, 16, 8)], C[:4], 6, -90, 96,
+                      " class='lp-b'")),
     # --- the Tiger Moth, small and near, crossing in front of the crown
     ("moth", img(moth(), 330, 30, " class='lp-t'")),
     # --- moments: Dola's flaptters gliding down past, then Pazu's pigeons
-    ("flaptters", f"<g class='lp-mx' style='--x:400px;--y:40px;--r:36000deg;--d:10s'><g class='lp-my' stroke='#bde'>"
-     + wings(FX, FY) + wings(FX - 34, FY - 9) + img(art(FLAP, FPAL), FX, FY, " id='lp-fl'")
-     + "<use href='#lp-fl' x='-34' y='-9'/></g></g>"),
+    ("flaptters", "<g class='lp-my' style='--x:400px;--y:40px;--d:10s' stroke='#bde'>"
+     + f"<g class='lp-mw' opacity='.5'><path id='lp-ff' d='{fan(FX, FY - 8, True)}'/><use href='#lp-ff' x='-34' y='-9'/></g>"
+     + "<g class='lp-mx'>" + img(art(FLAP, FPAL), FX, FY - 8, " id='lp-fl'") + "<use href='#lp-fl' x='-34' y='-9'/></g>"
+     + f"<g class='lp-mw' opacity='.7'><path id='lp-fn' d='{fan(FX, FY - 8)}'/><use href='#lp-fn' x='-34' y='-9'/></g></g>"),
     ("pigeons", "<g class='lp-mx' style='--x:-400px;--y:-40px;--r:7200deg;--d:184s'><g class='lp-my'>"
      + img(flock([(0, 0), (9, -4), (17, 3), (25, -6)]), 330, 110, " class='lp-pf'") + "</g></g>"),
-    ("cloud_c", img(cloud([(10, 15, 8), (24, 12, 11), (40, 14, 10), (56, 12, 12), (72, 16, 8), (48, 20, 9),
-                           (30, 21, 9)], 82, 30, C[:4], 8), -90, 104, " class='lp-c'")),
+    ("cloud_c", cloud([(10, 15, 8), (24, 12, 11), (40, 14, 10), (56, 12, 12), (72, 16, 8), (48, 20, 9),
+                       (30, 21, 9)], C[:4], 8, -90, 104, " class='lp-c'")),
     # --- Pazu and Sheeta: her braid tip sways, both blink, he glances up at the island
     ("kids", img(kids(), PX, KY)
      + f"<path class='lp-s' fill='#2a2438' d='M{SX} {KY + 14}h1v2h-1z'/>"
@@ -813,20 +772,19 @@ CSS = (
     # moments on that cycle, each parked and unchanging outside its slot (--d = when it starts):
     #   day    10 flaptters . 33 crystal and core
     #   dusk   46 the soldier robot flies home, left to right (on screen from 56, gone behind Laputa by 64)
-    #   night  74 Goliath, searchlights on . 93 and 153 crystal and core . 104 lightning . 126 the far swarm
-    #          (in view from 142, across the middle 156-168, over the garden 168-198 as dawn comes)
+    #   night  74 Goliath, searchlights on . 93 and 153 crystal and core . 104 lightning
     #   dawn   182 Pazu's trumpet . 184 pigeons
     #   day    190 Tiger Moth . 213 crystal and core . 224 lightning
-    ".lp-mx{animation:lp-x 240s var(--d) steps(200) infinite}.lp-my{animation:lp-y 240s var(--d) steps(40) infinite}"
-    ".lp-w{animation:lp-r 240s var(--d) steps(200) infinite}.lp-pf{animation:lp-r 240s var(--d) steps(40) infinite}"
+    ".lp-mx{animation:lp-x 240s var(--d) steps(200) infinite}.lp-mw{animation:lp-x 240s var(--d) steps(400) infinite}.lp-my{animation:lp-y 240s var(--d) steps(40) infinite}"
+    ".lp-pf{animation:lp-r 240s var(--d) steps(40) infinite}"
     "@keyframes lp-x{7.5%,to{transform:translateX(var(--x))}}@keyframes lp-y{7.5%,to{transform:translateY(var(--y))}}"
     "@keyframes lp-r{7.5%,to{transform:rotate(var(--r))}}"
-    ".lp-w,.lp-pf,.lp-q{transform-box:fill-box;transform-origin:center}.lp-w{transform-origin:bottom}"
+    ".lp-pf,.lp-q{transform-box:fill-box;transform-origin:center}"
     ".lp-tp{animation:lp-tp 240s 176s steps(1) infinite}@keyframes lp-tp{2.5%{transform:translateX(-400px)}7.5%{transform:none}}"
     ".lp-z{opacity:0;animation:lp-z 60s 30s steps(4) infinite}@keyframes lp-z{5%,14%{opacity:1}19%{opacity:0}}"
     ".lp-bo{opacity:0;animation:lp-bo 120s 104s steps(1) infinite}"
     "@keyframes lp-bo{.3%{opacity:1}.5%{opacity:0}.9%{opacity:1}1.4%{opacity:0}}"
-    # the Tiger Moth's flyby (and the far swarm's): 30 s gliding in over the right third, 12 s across the middle,
+    # the Tiger Moth's flyby: 30 s gliding in over the right third, 12 s across the middle,
     # 30 s gliding out over the left third, a whole pixel or two a step. The Goliath crosses by night
     ".lp-t{animation:lp-t 240s 190s steps(100) infinite}"
     "@keyframes lp-t{12.5%{translate:-100px}17.5%{translate:-300px}30%,to{translate:-400px}}"
