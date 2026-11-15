@@ -37,11 +37,12 @@ def load(slug):
 
 def shoot(html_path, png_path, w=VIEW_W, h=VIEW_H):
     url = "file:///" + html_path.replace("\\", "/")
-    profile = tempfile.mkdtemp()  # own profile so parallel builds don't collide
-    subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--window-size={w},{h}",
-                    f"--user-data-dir={profile}",
-                    "--virtual-time-budget=1500", f"--screenshot={png_path}", url],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=60)
+    # own throwaway profile so parallel builds don't collide; ignore_cleanup_errors because Chrome can hold a file briefly
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile:
+        subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--window-size={w},{h}",
+                        f"--user-data-dir={profile}",
+                        "--virtual-time-budget=1500", f"--screenshot={png_path}", url],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=60)
 
 
 # Pause every CSS animation at time T so a headless screenshot shows that exact frame.
@@ -84,6 +85,11 @@ def app_html(css, theme):
 
 
 def build(slug, times):
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        _build(slug, times, tmp)
+
+
+def _build(slug, times, tmp):
     m = load(slug)
     out = os.path.join(HERE, "out", slug)
     os.makedirs(out, exist_ok=True)
@@ -102,7 +108,6 @@ def build(slug, times):
     css = theme_css(svg, theme)
     open(os.path.join(out, "scene.svg"), "w", encoding="utf-8").write(svg)
 
-    tmp = tempfile.mkdtemp()
     frames = []
     for i, t in enumerate(times):
         hp = os.path.join(tmp, f"f{i}.html")

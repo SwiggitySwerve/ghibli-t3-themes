@@ -22,7 +22,7 @@ The user asked every scene agent to **clean up its scene, add more references an
 
 You are making an animated pixel-art background scene for a personal desktop-app theme (fan art, for the user's own use). In T3 Code, the scene fills the chat area behind the conversation.
 
-**Current phase: full budget. Each scene is now its own theme**, so your scene gets the whole theme to itself, roughly 4× the earlier compact budget. The user wants to see **the best each scene can be** before anything gets trimmed back down. The earlier compact versions are saved in `compact/scenes/` and `compact/out/`, so you are free to rework yours, compose it again from scratch, or build on what's there.
+**Current phase: full budget. Each scene is now its own theme**, so your scene gets the whole theme to itself, roughly 4× the earlier compact budget. The user wants to see **the best each scene can be** before anything gets trimmed back down. You are free to rework your scene, compose it again from scratch, or build on what's there.
 
 ## The bar
 - Someone who has seen the film should know it within a second, through its characters plus its signature setting, as clean, deliberate pixel art with Ghibli's painterly colour: a soft gradient sky, distinct atmospheric depth layers and warm/cool contrast.
@@ -86,7 +86,7 @@ These colours give the whole app (sidebar, buttons, inputs, borders) a palette t
 
 ## Report back (concise)
 1. The final budget line.
-2. What changed versus the compact version, what's in the scene, and what animates with what periods.
+2. What changed versus the previous version, what's in the scene, and what animates with what periods.
 3. Your THEME choices.
 4. An honest assessment: the weakest remaining spot.
 5. Paths to the best frame and app.png.

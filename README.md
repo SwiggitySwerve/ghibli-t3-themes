@@ -7,6 +7,7 @@ Personal fan-art themes: each one sets T3 Code's chat background to an animated 
 - `build_scene.py <slug> [times...]`: builds a scene, renders preview frames to `out/<slug>/`, writes `theme.json`, and checks the 20,000-character limit and T3's url() rule.
 - `install.py <slug>`: writes a built theme into T3's theme folder. `verify.py <slug>` checks the installed copy matches the build.
 - `lib.py`: shared pixel-art helpers. `BRIEF.md`: the rules every scene follows.
-- `saved/`: snapshots, including the shelved Slag Ravine scene.
 
-Status: Spirited Away, Totoro, Ponyo, Kiki, Howl, Nausicaä, Mononoke and Castle in the Sky done; The Boy and the Heron and The Wind Rises paused; Slag Ravine shelved.
+T3 loads at most 196,608 bytes of theme files in total and silently skips the rest, so only about nine of these (~20 KB each) can be installed at once.
+
+Status: Spirited Away, Totoro, Ponyo, Kiki, Howl, Nausicaä, Mononoke and Castle in the Sky done; The Boy and the Heron and The Wind Rises paused; Slag Ravine shelved and removed (it's in the git history).
