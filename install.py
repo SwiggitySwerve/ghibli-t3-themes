@@ -9,7 +9,7 @@ ghibli-<slug>.json files that the tool already created.
 """
 import json, os, sys
 
-STORE = r"C:\Users\wroll\.t3\userdata\themes"
+STORE = os.path.expanduser(os.path.join("~", ".t3", "userdata", "themes"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 for slug in sys.argv[1:]:

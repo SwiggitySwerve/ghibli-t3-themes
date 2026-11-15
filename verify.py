@@ -1,9 +1,9 @@
 """Compare a published T3 theme file against the build's theme.json. Usage: python verify.py <slug>..."""
-import json, sys
+import json, os, sys
 for s in sys.argv[1:]:
     built = json.load(open(f"out/{s}/theme.json", encoding="utf-8"))
     try:
-        pub = json.load(open(rf"C:/Users/wroll/.t3/userdata/themes/ghibli-{s.replace('_', '-')}.json", encoding="utf-8"))
+        pub = json.load(open(os.path.expanduser(f"~/.t3/userdata/themes/ghibli-{s.replace('_', '-')}.json"), encoding="utf-8"))
     except FileNotFoundError:
         print(f"{s}: not published"); continue
     diffs = [k for k in set(built) | set(pub) if k != "colors" and built.get(k) != pub.get(k)]
