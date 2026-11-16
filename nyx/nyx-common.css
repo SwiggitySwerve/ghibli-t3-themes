@@ -1,0 +1,81 @@
+
+/* ---- Nyx motion: shared layers (after stock Nyx CSS, before one variant file) ----
+   The published nyx.json minifies its vars: --a = sky art, --g = LED grid,
+   --d = dot size, --w = art width.
+   Paint order inside the isolated sidebar-wrapper, all at z-index -1:
+   1. wrapper::before  stock sky art (variants may animate it)
+   2. inset::before    the variant's effect layer
+   3. inset::after     twinkling stars
+   4. wrapper::after   static LED grid, so moving layers stay dotted
+   Only transform / opacity / filter animate, all compositor-driven.         */
+
+.dark [data-slot="sidebar-wrapper"]::before {
+  animation: nyx-base-breathe 17s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+.dark [data-slot="sidebar-inset"]::before,
+.dark [data-slot="sidebar-inset"]::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+
+.dark [data-slot="sidebar-inset"]::after {
+  inset: -12%;
+  background-image:
+    radial-gradient(circle at 120px 60px, #fff 0 2px, #c9c0ffa0 3px, #c9c0ff00 7px),
+    radial-gradient(circle at 40px 230px, #fff 0 1.8px, #b8c8ffa0 2.8px, #b8c8ff00 6px),
+    radial-gradient(circle at 300px 140px, #fff 0 2.2px, #e2b8ffa0 3.2px, #e2b8ff00 8px),
+    radial-gradient(circle at 210px 380px, #fff 0 1.9px, #c9c0ffa0 3px, #c9c0ff00 7px);
+  background-size: 241px 241px, 317px 317px, 397px 397px, 457px 457px;
+  background-repeat: repeat;
+  animation: nyx-counter 40s ease-in-out infinite alternate, nyx-twinkle 4s ease-in-out infinite;
+}
+
+.dark [data-slot="sidebar-wrapper"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--g);
+  background-size: var(--d) var(--d), var(--d) var(--d);
+  background-position: right bottom;
+}
+
+/* Open conversations: stock Nyx uses #000000bd (74%) here; 66% lets motion through */
+.dark [data-chat-canvas]:has(.messages-timeline-scroll) {
+  background: #000000a8 !important;
+}
+
+@keyframes nyx-base-breathe {
+  from { filter: brightness(0.8); }
+  to { filter: brightness(1.12); }
+}
+
+@keyframes nyx-counter {
+  from { transform: translate3d(3%, -2%, 0); }
+  to { transform: translate3d(-3%, 2%, 0); }
+}
+
+@keyframes nyx-twinkle {
+  0%, 100% { opacity: 0.15; }
+  9% { opacity: 1; }
+  17% { opacity: 0.3; }
+  31% { opacity: 0.9; }
+  44% { opacity: 0.1; }
+  58% { opacity: 1; }
+  71% { opacity: 0.25; }
+  86% { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dark [data-slot="sidebar-wrapper"]::before,
+  .dark [data-slot="sidebar-inset"]::before,
+  .dark [data-slot="sidebar-inset"]::after {
+    animation: none !important;
+  }
+}
