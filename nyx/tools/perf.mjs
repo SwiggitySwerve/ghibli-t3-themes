@@ -2,7 +2,7 @@
 // in real time and report requestAnimationFrame rate plus CPU time per Chrome process.
 // Usage: node perf.mjs <variant-ocean.css> [seconds] [extra chrome flags...]
 import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -72,5 +72,8 @@ try {
   console.log(`  gpu: ${d ? d.deviceString : "n/a"}; gl renderer: ${aux.glRenderer}; rasterization: ${fs.rasterization}; compositing: ${fs.gpu_compositing}; skia: ${aux.skiaBackendType}`);
   tab.close(); browser.close();
 } finally {
+  const exited = chrome.exitCode !== null ? Promise.resolve() : new Promise((r) => chrome.once("exit", r));
   chrome.kill();
+  await exited;
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
