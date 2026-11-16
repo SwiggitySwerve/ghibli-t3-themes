@@ -110,12 +110,13 @@ def art(rows, pal):
     return cv
 
 
-def bands(cv, y, rows, soft=True):
-    """rows: [(y_end, colour)]. Flat bands with an ordered-dither seam (3 rows when soft, else 1)."""
+def bands(cv, y, rows, soft=True, comb=True):
+    """rows: [(y_end, colour)]. Flat bands with an ordered-dither seam (3 rows when soft, else 1).
+    comb=False drops the soft seam's first row, a comb of lone pixels that reads as fence posts."""
     prev = None
     for y1, c in rows:
         for yy in range(y, y1):
-            k = yy - y + (0 if soft else 1)
+            k = yy - y + (0 if soft and comb else 1)
             for x in range(cv.w):
                 mix = prev and ((k == 0 and (x % 4 != (yy % 2) * 2)) or (k == 1 and (x + yy) % 2)
                                 or (k == 2 and soft and x % 4 == (yy % 2) * 2))
@@ -162,6 +163,10 @@ def pine(cv, x, base, h):
     cv.rect(x, base, 1, 2, ROCKB)
 
 
+WINS = [(5, 11, 5, 6), (13, 11, 5, 6), (11, 24, 4, 5), (18, 24, 4, 5)]   # the house's windows: x, rows up, w, h
+HOX = 106                                                                 # the house's left edge
+
+
 def house(cv, x0):
     y = GY
     cv.rect(x0 + 2, y - 14, 38, 14, WALL)             # ground floor
@@ -173,7 +178,7 @@ def house(cv, x0):
     for i in range(6):                                # hipped top roof
         cv.rect(x0 + 15 - 2 * i - (i > 3), y - 32 + i, 8 + 4 * i + 2 * (i > 3), 1, ROOF if i < 5 else ROOFD)
     cv.rect(x0 + 11, y - 31, 3, 5, WALLD)             # chimney
-    for x, yy, w, h in [(5, 11, 5, 6), (13, 11, 5, 6), (11, 24, 4, 5), (18, 24, 4, 5)]:   # lit windows
+    for x, yy, w, h in WINS:                          # lit windows
         cv.rect(x0 + x, y - yy, w, h, LAMP)
         cv.rect(x0 + x + w // 2, y - yy, 1, h, WALL)
     cv.rect(x0 + 23, y - 11, 5, 11, ROCKD)            # door
@@ -224,7 +229,7 @@ BANK = [(222, 78, 8), (240, 70, 13), (262, 75, 12), (284, 67, 15), (306, 73, 13)
 
 def draw():
     cv = Canvas(W, H)
-    bands(cv, 0, [(15, S[0]), (36, S[1]), (55, S[2]), (70, S[3]), (83, S[4]), (91, S[5]), (HZ, S[6])])
+    bands(cv, 0, [(15, S[0]), (36, S[1]), (55, S[2]), (70, S[3]), (83, S[4]), (91, S[5]), (HZ, S[6])], comb=False)
     for y in (91, 92, 93):                            # the horizon band gets a one-row seam: three rows read as a fence
         for x in range(W):
             cv.set(x, y, S[5] if y == 91 and (x + y) % 2 else S[6])
@@ -270,6 +275,11 @@ def draw():
     for x, y, n in [(12, 98, 18), (52, 101, 24), (104, 97, 16), (136, 102, 14), (160, 108, 12), (30, 106, 10),
                     (20, 114, 16), (70, 111, 20), (118, 116, 14), (150, 120, 10)]:
         cv.rect(x, y, n, 1, ROCK)
+    # the sea wall under the road: courses of big blocks, joints staggered
+    for i, y in enumerate((96, 102)):
+        cv.rect(0, y, 168, 1, ROCKB)
+        for x in range(9 * (i % 2), 168, 18):
+            cv.rect(x, y - 5, 1, 5, ROCKB)
     # road ledge with a low wall; tunnel through the point
     cv.rect(0, 88, TUN + 4, 2, S[5])
     for x in range(0, TUN + 2, 4):
@@ -282,7 +292,7 @@ def draw():
         pine(cv, x, cliff_top(x), h)
     home(cv)
     cv.blob([(101, 61, 8), (93, 66, 6), (107, 67, 5)], GRASS, GRASSD, PINE)
-    house(cv, 106)
+    house(cv, HOX)
     cv.rect(156, GY - 4, 17, 1, WALL)
     for x in range(156, 174, 4):
         cv.rect(x, GY - 5, 1, 5, WALL)
@@ -301,7 +311,7 @@ def draw():
 # eye = (d/L, h/H); slope tilts the mouth line; mouth is its length in head-lengths.
 KIND = {
     "rear": dict(top=[(0, .42), (.115, 1), (.24, .93), (.36, .95), (.6, .7), (.82, .36), (1, 0)], eye=(.075, .63), slope=-.1, mouth=1.5),
-    "breach": dict(top=[(0, .4), (.3, 1), (.5, .97), (.78, .7), (1, 0)], eye=(.2, .6), slope=-.06, mouth=.9),
+    "breach": dict(top=[(0, .4), (.3, 1), (.5, .97), (.78, .7), (1, 0)], eye=(.13, .73), slope=-.06, mouth=.9),
     "dive": dict(top=[(0, .16), (.12, .7), (.32, 1), (.48, .93), (.7, .6), (.87, .27), (1, 0)], eye=(.1, .4), slope=.3, mouth=.5),
 }
 
@@ -591,9 +601,9 @@ CPAL = {"y": LAMP, "b": "#cfe9f2", "w": "#fff6ea", "r": "#e22a38", "k": DARK, "h
 # Fujimoto: long red hair streaming back, gaunt face, striped blazer, arms out for balance
 FUJI = [
     "....hhhhhh.......",
-    "...hhhhhhhhhh.h..",
-    "..hhhhhhhhhhhhh..",
-    "..sshhhhhhhhhhhhh",
+    "...hlllhhhhhh.h..",
+    "..hhhhhllllhhhh..",
+    "..ddhhhhhhhlllhhh",
     "..skshhhhhhh.hh..",
     "..ssshhhhhh.h....",
     "...sshhhhh.......",
@@ -612,15 +622,15 @@ FUJI = [
     "...jj...jj.......",
     "..kkk..kkk.......",
 ]
-FPAL = {"h": "#9c2c30", "s": "#f2d6c0", "j": "#22306a", "w": "#e8eef4", "k": DARK}
+FPAL = {"h": "#9c2c30", "l": "#c8483c", "d": "#9a6a78", "s": "#f2d6c0", "j": "#22306a", "w": "#e8eef4", "k": DARK}
 # The Koganei Maru, bow to the left: a dusk silhouette with lit bridge windows and portholes, a mast
 # light, and Koichi on the bridge roof with his signal lamp. The last four rows ride below the water.
 SHIP = [
     "..............................k...............",
-    "..............................ky..............",
-    "..............................k...............",
-    "...........k..............s...k....kk.........",
-    "...........k..............c...k....kk.........",
+    ".........................s....ky..............",
+    ".........................ck...k...............",
+    "...........k.............cs...k....kk.........",
+    "...........k..............cc..k....kk.........",
     "...........k.............uuuuuuuu..rr.........",
     "..........kkk............uyuyuyuu..kk.........",
     "...........k.............uuuuuuuuuuuuu........",
@@ -688,10 +698,13 @@ def goddess():
 
     for lk in LOCKS:
         lock(*lk)
+    circ = {5: 12, 6: 11, 7: 11, 13: 11, 14: 11}              # the circlet's column on each row (else 10)
     for y in range(3, 26):                                    # her head: hair, and her face turned up and toward us
         for x in range(1, 32):
             f = ((x - 18) / 11) ** 2 + ((y - 11) / 7.5) ** 2
-            if f <= 1:
+            if f <= 1 and x < circ.get(y, 10):                # hair down to the circlet at her hairline
+                put(x, y, "h")
+            elif f <= 1:
                 put(x, y, "S" if f > .8 and x > 22 and y > 12 else "p")            # a soft jaw
             elif ((x - 16) / 15) ** 2 + ((y - 15) / 10.5) ** 2 <= 1:
                 put(x, y, "L" if y < 7 else "h")
@@ -724,12 +737,13 @@ def goddess():
     for lk in OVER:
         lock(*lk)
     face = ([(12, 5, "g"), (11, 6, "g"), (11, 7, "g"), (10, 8, "g"), (10, 9, "g"), (10, 10, "g"), (10, 11, "g"), (10, 12, "g"),
-             (11, 13, "g"), (11, 14, "g"), (11, 10, "r")]                                               # circlet arcing over her forehead, its jewel
-            + [(35, 10, "g"), (36, 11, "g"), (36, 12, "g"), (36, 13, "g"), (35, 14, "g")]               # necklace
-            + [(17, 6, "k"), (18, 7, "k"), (17, 11, "k"), (18, 12, "k"), (18, 13, "k"), (17, 14, "k"),  # two lowered lids,
+             (11, 13, "g"), (11, 14, "g"), (11, 10, "r")]                                               # circlet at her hairline, its jewel
+            + [(35, 10, "L"), (36, 12, "g"), (35, 14, "L")]                                             # coral beads, a gold pendant
+            + [(17, 5, "k"), (17, 6, "k"), (18, 7, "k"), (18, 8, "k"),                                  # two lowered lids with lashes,
+               (17, 11, "k"), (18, 12, "k"), (18, 13, "k"), (17, 14, "k"), (17, 15, "k"),
                (16, 12, "S"), (16, 13, "S")]                                                            # the nearer one shaded
-            + [(22, 8, "S"), (22, 9, "S"), (21, 13, "S"), (22, 13, "S"),                                # nose, cheek
-               (25, 10, "r"), (25, 11, "S")])                                                           # a small mouth
+            + [(22, 8, "S"), (22, 9, "S"), (21, 13, "S"), (22, 14, "S"), (23, 14, "S"),                 # nose, shade under the near cheek
+               (25, 10, "r"), (25, 11, "r")])                                                           # a small red mouth
     for x, y, ch in face:
         put(x, y, ch)
     ring = [(x, y) for y in range(cv.h) for x in range(cv.w) if cv.get(x, y) != UNPAINTED]
@@ -792,14 +806,14 @@ BOATPAL = {"y": LAMP, "w": "#fff6ea", "k": DARK, "g": "#2f9a5c", "r": ROOFD}
 # In the front row's water: one of the Devonian fish (an armoured head-shield with its jointed arm,
 # a scaly tail) and three jellyfish
 DEVON = [
-    "..aaaaaaaaaaaa....................",
-    ".aaaaaaaaaaaaaa.....bb............",
-    "aakaadaaaadaaaabbbbbbbbbbb......b.",
-    "aaaaadaaaadaaaabbbbbbbbbbbbbb..bb.",
+    "..AAAAAAAAAAAA....................",
+    ".AaaaaaaaaaaaaA.....BB............",
+    "aakwadaaaadaaaaBBBBBBBBBBB......b.",
+    "aakkadaaaadaaaabbbbbbbbbbbbbb..bb.",
     "aaaaadaaaadaaaabbbbbbbbbbbbbbbbbb.",
-    "aaaaadaaaadaaaabbbbbbbbbbbbbbbbb..",
-    ".aaaadaaaadaaabbbbbbbbbbbbb.......",
-    "..aaaaaaaaaaaa...bbbbb............",
+    "eaaaadaaaadaaaecccbbbbbbbbbbbbbb..",
+    ".eaaadaaaadaaeccccccccccccc.......",
+    "..eeeeeeeeeeee...ccccc............",
     "...daaaaaa........................",
     "....ddaaaaa.......................",
     "......dddaa.......................",
@@ -815,7 +829,8 @@ def creatures():
     dy, jy = under(DEVX, len(DEVON[0])), under(JELX, 32)
     top = min(dy, jy)
     cv = Canvas(DEVX + len(DEVON[0]) - JELX, max(dy + len(DEVON), jy + 11) - top)
-    cv.paint(DEVON, {"a": "#b89a5a", "d": "#5a4628", "k": DARK, "b": "#7a8a5a"}, DEVX - JELX, dy - top)
+    cv.paint(DEVON, {"a": "#b89a5a", "A": "#dcc07c", "e": "#8a6e3c", "d": "#5a4628", "k": DARK, "w": "#fff6ea",
+                     "b": "#7a8a5a", "B": "#9aaa6e", "c": "#5a6844"}, DEVX - JELX, dy - top)
     for x, y in ((0, 3), (11, 0), (23, 5)):
         cv.paint(JELLY, {"p": "#f0c8e0", "t": "#c898d0"}, x, jy - top + y)
     return cv, top
@@ -846,6 +861,50 @@ def leaper(dx):
             f"<path class='po-S' stroke='#eef' d='M{x - 2} {y + 1}.5h1m9 0h1M{x} {y - 1}.5h1m5 0h1'/></g>")
 
 
+def blackout():
+    """The house's lit panes and its door lamp, darkened. An image, not a path, so its edges land on
+    the same screen pixels as the PNG's."""
+    x0, y0 = HOX + 5, GY - 24
+    cv = Canvas(32, 19)
+    for x, yy, w, h in WINS + [(34, 10, 3, 4)]:
+        cv.rect(HOX + x - x0, GY - yy - y0, w, h, ROCKD)
+    for x, yy, w, h in WINS:
+        cv.rect(HOX + x + w // 2 - x0, GY - yy - y0, 1, h, UNPAINTED)    # the mullions stay
+    return img(cv, x0, y0, cls("po-P"))
+
+
+HALO = 17, 12, 19, 13                            # Granmamare's halo: centre in her face's coords, radii
+
+
+def halo():
+    """A one-pixel gold ellipse around her head, as an image so it stays crisp."""
+    cx, cy, rx, ry = HALO
+    cv = Canvas(2 * rx + 1, 2 * ry + 1)
+    for i in range(720):
+        a = math.pi * i / 360
+        cv.set(round(rx + rx * math.cos(a)), round(ry + ry * math.sin(a)), "#ffe9a0")
+    return img(cv, W + GM + cx - rx, GODY + GM + cy - ry, cls("po-R"), 210)
+
+
+def rim():
+    """The thunderhead's edge where it meets the sky, lit up by the bolt in front of it."""
+    th, bk = Canvas(W, H), Canvas(W, H)
+    cloud(th, THUNDER, HZ - 5, S[0], S[0], S[0])
+    cloud(bk, BANK, HZ - 5, S[0], S[0], S[0], False)
+    x0 = W
+    for y in range(77, HZ - 5):                       # the bank's flat lower mass, as draw() paints it
+        x0 = min([x for x in range(W) if bk.get(x, y) != UNPAINTED] + [x0])
+        bk.rect(x0, y, W - x0, 1, S[0])
+    on = lambda x, y: x == W or 0 <= x and 0 <= y and th.get(x, y) != UNPAINTED    # (it runs off the right edge)
+    pts = [(x, y) for y in range(H) for x in range(W) if on(x, y) and bk.get(x, y) == UNPAINTED
+           and not (on(x, y - 1) and on(x - 1, y) and on(x + 1, y))]
+    x0, y0 = min(x for x, y in pts), min(y for x, y in pts)
+    cv = Canvas(max(x for x, y in pts) - x0 + 1, max(y for x, y in pts) - y0 + 1)
+    for x, y in pts:
+        cv.set(x - x0, y - y0, S[6])
+    return img(cv, x0, y0, cls("po-t"))
+
+
 TR = track()
 FEET0 = MAIN_Y + MAIN_WY - TR[0]                 # feet row on screen at t=0
 SWELL, RIDE = swell(), 108                       # Fujimoto's fish; how far it carries him in, and sinks
@@ -859,19 +918,29 @@ SPRITES = (
     # one little sister, stamped wherever one is needed
     "<defs><g id='po-4' stroke='#d43'><path d='M1 .5h4m1 0h1M2 1.5h5M1 2.5h4m1 0h1'/><path stroke='#fec' d='M0 1.5h2'/></g></defs>"
     # a bolt between the storm ceiling and the far cloud bank; scud racing under the ceiling
+    # (the thunderhead's rim lights up with it); a fainter bolt far off to the left
+    + rim() +
     "<path class='po-t' fill='none' stroke='#ffe' d='M296.5 13.5v7h-3v6h4v8h-3v7h-3v8M297.5 34.5h3v5h2v4'/>"
+    "<path class='po-T' fill='none' stroke='#dde5b4' d='M30.5 15.5v6h2v7h-3v6h2v6M32.5 28.5h3v4'/>"
     f"<g class='po-c'>{twice(img(scud(), 0, 17), 'po-k')}</g>"
     # the Koganei Maru pitching in open water, Koichi's lamp and its beam; then the sea in front of
     # her hull (redrawn from the PNG) with the wash at her bow
     f"<g class='po-s'>{img(art(SHIP, SHPAL), SHX, SHY)}"
     f"<path class='po-m' stroke='#ffc' d='M{SHX + 8} {SHY + 2}.5h17M{SHX + 8} {SHY + 1}.5h11m-11 2h11"
-    f"M{SHX + 8} {SHY}.5h5m-5 4h5'/></g>"
+    f"M{SHX + 8} {SHY}.5h5m-5 4h5'/>"
+    # smoke from her funnel: puffs a step apart that grow as they drift downwind, the train sliding
+    # one step and starting over
+    f"<g class='po-K'><path fill='{S[3]}' d='M{SHX + 37} {SHY + 2}h3v1h-3zm1-1h1v1h-1zm3 1h4v-2h-1v-1h-2v1h-1z'/>"
+    f"<path fill='{S[4]}' d='M{SHX + 45} {SHY + 1}h4v-2h-1v-1h-2v1h-1z'/></g></g>"
     f"<path fill='{SEA[1]}' d='M{SHX - 4} {SHWL}h{len(SHIP[0]) + 8}v{DRAFT}h-{len(SHIP[0]) + 8}z'/>"
     f"<path stroke='#eef' stroke-dasharray='3 2' d='M{SHX - 3} {SHWL}.5h13'/>"
     # Lisa's car comes out of the tunnel and runs down the cliff road
     # (Lisa at the wheel, a hand out of the window waving)
     f"<svg width='{TUN + 1}' height='99'><g class='po-v'>{img(art(CAR, CPAL), TUN + 1, 80)}"
     f"<path class='po-A' fill='{SKIN}' d='M{TUN + 10} 79h1v2h-1z'/></g></svg>"
+    # its headlights coming up the tunnel just before it comes out
+    f"<path class='po-H' fill='#fff0a0' d='M{TUN + 2} 84h2v1h-2z'/>"    # the power cut: the house's windows go dark, then the generator brings them back
+    + blackout() +
     # the flag's fly end snapping in the wind
     f"<path class='po-3' fill='{ROOF}' d='M156 {GY - 36}h2v1h-2z'/>"
     # the ladies: a waving hand, and Toki's glasses as she looks about
@@ -883,7 +952,8 @@ SPRITES = (
     f"<path class='po-l' fill='#ffb' d='M165 {GY - len(SOSUKE) - 2}h3v3h-3z'/></g>"
     f"<path fill='{WALL}' d='M157 {GY - 4}h3v-1h1v1h3v1h-3v3h-1v-3h-3z'/>"
     # Fujimoto rides a fish in after her from the right, then goes under
-    f"<g class='po-2'>{img(SWELL, 256, 97 - 6)}{img(art(FUJI, FPAL), 270, 97 - len(FUJI))}</g>"
+    # (his fish rides high enough that its eye clears the crests in front)
+    f"<g class='po-2'>{img(SWELL, 256, 91 - 6)}{img(art(FUJI, FPAL), 270, 91 - len(FUJI))}</g>"
     # back row
     f"<g class='po-u'><g class='po-b'>{twice(img(BACK, 0, BACK_Y) + img(art(BOAT, BOATPAL), BOATX, BOATY), 'po-q')}</g></g>"
     # main row and the sisters that travel with it
@@ -891,10 +961,14 @@ SPRITES = (
     # Granmamare gliding inside that water, parked just off the right edge until her pass. The sisters
     # pass behind her (so nothing crosses her face) and show through the lit water around her; the
     # front row will pass in front of her lower hair
-    f"<g class='po-G'>{img(GOD, W, GODY, alpha=GODA)}</g>"
+    # (her halo lies behind her: through her glow, never across her throat)
+    f"<g class='po-G'>{halo()}{img(GOD, W, GODY, alpha=GODA)}</g>"
     # one sister ahead of Ponyo and two behind, each on her path; then Ponyo herself: a nested svg
     # windows one frame of her sheet
+    # (Ponyo throws her own spray as she lands)
     f"{leaper(-22)}{leaper(18)}{leaper(36)}<g class='po-j'>"
+    f"<path class='po-S' fill='#eef' d='M{PX - 9} {FEET0}h2v1h-2zm-1-1h1v1h-1zm-1-2h1v2h-1zm-2-2h1v1h-1z"
+    f"M{PX + 7} {FEET0}h2v1h-2zm2-1h1v1h-1zm1-2h1v2h-1zm2-2h1v1h-1z'/>"
     f"<svg x='{PX - 8}' y='{FEET0 - FH + 2}' width='{FW}' height='{FH}'>"
     f"<g class='po-L'>{img(ponyo(), attr=cls('po-r'))}</g></svg></g></g>"
     # front row
@@ -978,6 +1052,16 @@ CSS = (
     # the ship climbs a swell and settles: a pixel every half second, three at most
     ".po-s{animation:po-s 20s steps(1) infinite}@keyframes po-s{40%,55%{translate:0 -1px}42.5%,52.5%{translate:0 -2px}"
     "45%{translate:0 -3px}57.5%{translate:0 0}}"
+    ".po-K{animation:po-K 6s steps(4) infinite}@keyframes po-K{to{translate:4px}}"
+    # the far bolt: the near one's flicker on a 37.5 s period (at 15 s), so the two never coincide
+    ".po-T{opacity:0;animation:po-t 37.5s steps(1) infinite}"    # the car's headlights glow up the tunnel for the two seconds before it comes out (at 5 s of 40)
+    ".po-H{opacity:0;animation:po-H 40s -35s steps(1) infinite}@keyframes po-H{95%{opacity:.4}97.5%{opacity:1}}"
+    # power cut at 25 s and 185 s of every 200, clear of the car, Fujimoto and Granmamare: dark for
+    # 8 s, half-lit for 1 s as the generator spins up, then lit
+    ".po-P{opacity:0;animation:po-P 200s steps(1) infinite}"
+    "@keyframes po-P{12.5%,92.5%{opacity:1}16.5%,96.5%{opacity:.5}17%,97%{opacity:0}}"
+    # Granmamare's halo breathes slowly through four levels
+    ".po-R{animation:po-R 6s steps(2) infinite}@keyframes po-R{from,to{opacity:.4}50%{opacity:1}}"
     ".po-h{animation:po-h 10s steps(1) infinite}@keyframes po-h{90%,95%{translate:0 -1px}92.5%{translate:0 0}}"
     ".po-A{animation:po-A 1.5s -.5s steps(1) infinite}@keyframes po-A{50%{translate:1px}}"
     # the lamps talk in Morse, one unit = 5 ticks: the house sends BAKA, the ship answers LOVE

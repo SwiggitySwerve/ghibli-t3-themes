@@ -47,7 +47,7 @@ COLORS = 16
 
 # daylight palette
 S = ["#4f9ad8", "#73b4e4", "#9ccdec", "#c4e2ee"]   # sky, top -> low
-HAZE = "#dcecdc"
+HAZE, FOG = "#dcecdc", "#c4dcd8"                 # cloud streaks; the softer haze behind the tree line
 MT1, MT2 = "#a4c8dc", "#8ab4cc"                 # far mountains
 R1, R2, R3 = "#6aa690", "#44826a", "#285844"    # conifer ridges, far -> near
 WA = ["#2f6e5c", "#b4dccc", "#7cbcd0", "#4a94b4"]  # pool: tree reflection, bright horizon, sky, deep
@@ -144,13 +144,15 @@ def draw():
     for x, y, n in [(98, 22, 30), (104, 21, 16), (108, 23, 26), (168, 34, 44), (178, 33, 24), (186, 35, 34),
                     (140, 50, 30), (146, 49, 14), (206, 56, 30), (96, 62, 24)]:
         cv.rect(x, y, n, 1, HAZE)
-    # far mountains, then bright haze pooling at their feet (the tree line stands against it)
+    # far mountains, then haze pooling at their feet (the tree line stands against it; a mid tone, so the
+    # gaps between the crowns don't read as a row of white teeth)
     for x in range(W):
         a = int(round(69 + 4 * math.sin(x * .031 + 1.9) + 2 * math.sin(x * .09)))
         b = int(round(77 + 3 * math.sin(x * .043 + 4.4) + 2 * math.sin(x * .12 + 1)))
         cv.rect(x, a, 1, H, MT1)
         cv.rect(x, b, 1, H, MT2)
-    bands(cv, 82, [(82, MT2), (H, HAZE)])
+    for x in range(W):          # its top is a soft wavy bank of mist, not a dithered seam (that read as a stitched line)
+        cv.rect(x, 85 + int(round(1.3 * math.sin(x * .08) + .8 * math.sin(x * .21 + 1))), 1, H, FOG)
     return cv
 
 
@@ -176,17 +178,35 @@ def mid():
     cv.rect(0, SHORE - 1, W, 1, R3)
     # the pool mirrors the sky upside down: bright near the far shore, deeper at our feet
     bands(cv, SHORE, [(112, WA[1]), (124, WA[2]), (H, WA[3])])
-    # ... and the tree line and far trunks, broken by ripples
+    # the band edges as ripples (runs at slightly different heights) rather than dithered seams
+    r = random.Random(6)
+    for y0, up, lo in ((112, WA[1], WA[2]), (124, WA[2], WA[3])):
+        x = 0
+        while x < W:
+            n, d = r.randrange(4, 12), r.randrange(-1, 3)
+            for xx in range(x, x + n):
+                for y in range(y0 - 1, y0 + 3):
+                    cv.set(xx, y, up if y < y0 + d else lo)
+            x += n
+    # ... and the tree line and far trunks: each crown's reflection runs a different length, and its
+    # tip breaks up into horizontal ripple streaks of random lengths
+    r = random.Random(4)
+    rip = []
+    for k in range(40):
+        row, on = [], r.random() < .5
+        while len(row) < W:
+            row += [on] * r.randrange(3, 10 if on else 5)
+            on = not on
+        rip.append(row)
     for x in range(W):
-        n = int((SHORE - top[x]) * .9) + 3
-        for y in range(SHORE, SHORE + n):
-            k = y - SHORE
-            if k < n - 4 or (x + 2 * k) % 4 < 2:
-                cv.set(x, y, WA[0])
-    for x, w in FAR:
+        n = int((SHORE - top[x]) * (.8 + .3 * math.sin(x * .19) * math.sin(x * .061 + 2))) + 3
+        for k in range(n + 1):
+            if k < max(n - 2, 4) or rip[k][x]:
+                cv.set(x, SHORE + k, WA[0])
+    for x, w in FAR:            # the far trunks' reflections waver and thin out instead of breaking into a ladder
         for k in range(26):
-            if k < 12 or k % 3:
-                cv.rect(x + (1 if k % 6 > 2 and k > 8 else 0), SHORE + k, w - (k > 18), 1, WA[0])
+            if k < 12 or r.random() < 1 - (k - 10) / 16:
+                cv.rect(x + (r.randrange(-1, 2) if k > 8 else 0), SHORE + k, w - (k > 18), 1, WA[0])
     for x, y, n in [(130, 115, 14), (226, 118, 10), (60, 121, 12), (176, 129, 12), (20, 131, 8), (286, 127, 9),
                     (96, 135, 10), (206, 137, 14)]:
         cv.rect(x, y, n, 1, WA[1] if y < 124 else WA[2])
@@ -270,15 +290,15 @@ SAN = [
     "gwWWWWWWWWnnnnssssssso......",
     ".gwWWWWWWwnnnnssssssso......",
     "..ggwwWWw......sssssso......",
-    "...ggwww.........sssso......",
-    ".................sssso......",
-    ".................sssso......",
-    ".................sssso......",
-    ".................ssss.......",
-    ".................ssss.......",
-    ".................ssss.......",
-    ".................sssh.......",
-    ".................hhhhh......",
+    "...ggwww.......Sssssso......",
+    "...............Sssss.o......",
+    "...............Ssss..o......",
+    "..............Ssss...o......",
+    "..............Ssss..........",
+    ".............Ssss...........",
+    ".............Ssss...........",
+    ".............bbbb...........",
+    "............bbhhhb..........",
 ]
 YAKUL = [
     "..........................................................",
@@ -311,14 +331,14 @@ YAKUL = [
     "....u...yyayyayyayyayyahhhhhhhh.....uuuuuucccccc..........",
     "...uu...yayyayyayyayyahhhhhhhhh....uuuuuuccccccc..........",
     "...ucc...ayyayyayyayyabbbbbhhhh...uuuuuuucccccc...........",
-    "....uccu.yuyauyuayuyuabbbbbbccauuuuuuuuuccccccc...........",
-    ".....uuuuauuyuuuuauuyuhhhhhhccauuuuuuuuucccccc............",
-    ".....uuuuuouuuuuuuhhhhhhhhhhccauuuuuuuuucccccc............",
-    "....uuuuuuuouuuuuuhhhhhhhhhhccauuuuuuuuuuccccc............",
-    "....uuuuuuuuouuuuuhhhhhhhhhhccauuuuuuuuucccccc............",
-    "....uuuuuuuuuuuuuuhhhhhhhhhhccauuuuuuuuuuc.c.c............",
-    "....uuuuuuuuuuuuuuhhhhhhhhhhbbbbuuuuuuuuuc...c............",
-    "....uuuuuuuuuuuuuuhhhhhhhhhhbbbbbuuuuuuuuuuc..............",
+    "....uccu.yuyauyuayuyuabbbbbbhhhhuuuuuuuuccccccc...........",
+    ".....uuuuauuyuuuuauuyubbbbbhhhhuuuuuuuuucccccc............",
+    ".....uuuuuouuuuuuuuuuuubbbbhqqhuuuuuuuuucccccc............",
+    "....uuuuuuuouuuuuuuuuuuubbbhhhhuuuuuuuuuuccccc............",
+    "....uuuuuuuuouuuuuuuuuuuuubhqqhuuuuuuuuucccccc............",
+    "....uuuuuuuuuuuuuuuuuuuuuuuhqqhuuuuuuuuuuc.c.c............",
+    "....uuuuuuuuuuuuuuuuuuuuuuuhhhhhuuuuuuuuuc...c............",
+    "....uuuuuuuuuuuuuuuuuuuuuuuhhhhhhuuuuuuuuuuc..............",
     ".....Uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu................",
     ".....UUuuuuuuuuuuccccccccccccccuuuuuuuuuu.................",
     "......UUuuuuuccccccccccccccccccccuuuuuuu..................",
@@ -366,13 +386,13 @@ PUP = [
     "WWWWWwWWWWWWwWW..........",
     "WWWWwWWWWWWWgWW..........",
     "WWWWwWWWWWWgwWWg.........",
-    "wWWWwWWWWWWgwWWg.........",
-    "wWWWwWWWWWWgwWWg.........",
-    "wggggggggWWgwWWg.......WW",
-    "WWWWWWWWWgggggggg...WWWWW",
-    "WWWWWWWWWWWWWWWWWWWWWWWWw",
-    "wWWWWWWWWWWWWWWWWWWWWWww.",
-    "gwwwwwwwwwwwwwwwwwwww....",
+    "wWWWwWWWWWWgwWWg......W..",
+    "wWWWwWWWWWWgwWWg.....WWw.",
+    "wggggggggWWgwWWg....WWWw.",
+    "WWWWWWWWWgggggggg.WWWWw..",
+    "WWWWWWWWWWWWWWWWWWWWWg...",
+    "wWWWWWWWWWWWWWWWWwwgg....",
+    "gwwwwwwwwwgggggggg.......",
 ]
 PUP_B = [
     "............W...W...................................",
@@ -496,7 +516,7 @@ MASK = [
 ]
 PAL = {
     "W": "#f2f6ee", "w": "#c6d6de", "g": "#8faac4", "d": "#5c7c9e", "k": "#101c24", "e": "#f0b030",
-    "R": "#e03a34", "D": "#a82430", "s": "#eab890", "h": "#3a2418", "n": "#1c2c64", "N": "#2c4490",
+    "R": "#e03a34", "D": "#a82430", "s": "#eab890", "S": "#c98a68", "h": "#3a2418", "n": "#1c2c64", "N": "#2c4490",
     "o": "#c89a58", "c": "#f0e6c4", "b": "#8c6444", "a": "#d8b868",
     "p": "#e86a50", "u": "#e8a26a", "U": "#c07840", "q": "#b6b6ac", "Q": "#84847c", "y": "#ecdf9c",
     "f": "#dcbca6", "F": "#b8927c", "v": "#6c7450", "V": "#9aa472", "L": "#77724a", "l": "#565334", "Z": "#5e5e58",
@@ -591,7 +611,7 @@ def fern(cv, x0, y0, size, lean=0):
                 cv.set(int(x + math.cos(th) * 1.5), int(y + math.sin(th) * 1.5 + 1), M1)
 
 
-def fg():
+def fg(yakul=YAKUL, pup_b=PUP_B):
     cv = Canvas(W, H)
     trunk(cv, -10, 12, 1, 3)
     trunk(cv, 306, 332, -1, 4)
@@ -643,11 +663,11 @@ def fg():
             cv.rect(x - n // 2, y - 2 + i, n, 1, B0)
     # Ashitaka on Yakul, and the young wolves, each with a shadow on the moss
     cv.rect(YX + 15, GROUND, 36, 2, M0)
-    cv.paint(YAKUL, PAL, YX, YY, True)
+    cv.paint(yakul, PAL, YX, YY, True)
     cv.rect(LX + 1, GROUND, 48, 2, M0)
     cv.rect(PX + 1, GROUND, 24, 2, M0)
     cv.paint(PUP, PAL, PX, PY)
-    cv.paint(PUP_B, PAL, LX, LY)
+    cv.paint(pup_b, PAL, LX, LY)
     # Moro's legs (her body breathes in a sprite above) and her shadow on the moss
     cv.rect(MX + 9, GROUND, 46, 1, M1)
     cv.rect(MX + 12, GROUND + 1, 40, 1, M0)
@@ -798,6 +818,46 @@ def deer(first):
             + "</g></g></g></g>")
 
 
+def put(rows, *edits):
+    """A copy of some art with runs of pixels replaced: (row, column, new pixels)."""
+    rows = list(rows)
+    for y, x, s in edits:
+        rows[y] = rows[y][:x] + s + rows[y][x + len(s):]
+    return rows
+
+
+def patch(cls, **art):
+    """A flick frame for the foreground: only the pixels that change when a piece of its art is redrawn
+    (what is uncovered shows the pool or bark behind), as a small image to switch on and off."""
+    m, a, b = mid(), fg(), fg(**art)
+    d = [(x, y) for y in range(H) for x in range(W) if a.px[y][x] != b.px[y][x]]
+    x0, y0 = min(x for x, _ in d), min(y for _, y in d)
+    cv = Canvas(max(x for x, _ in d) - x0 + 3, max(y for _, y in d) - y0 + 3)
+    for x, y in d:
+        cv.set(x - x0 + 1, y - y0 + 1, m.px[y][x] if b.px[y][x] == UNPAINTED else b.px[y][x])
+    return img(cv, x0 - 1, y0 - 1, f" class='{cls}'")
+
+
+def oval(rx, ry, cy):
+    """A pixel-stepped ellipse centred on x 0, as one path."""
+    hw = [int(rx * math.sqrt(1 - ((y + .5 - ry) / ry) ** 2) + .5) for y in range(2 * ry)]
+    d = f"M{-hw[0]} {cy - ry}h{2 * hw[0]}"
+    for a, b in zip(hw, hw[1:]):
+        d += "v1" + (f"h{b - a}" if b != a else "")
+    d += f"v1h{-2 * hw[-1]}"
+    for a, b in zip(hw[::-1], hw[-2::-1]):
+        d += "v-1" + (f"h{a - b}" if b != a else "")
+    return d + "z"
+
+
+# Ashitaka's straw cape lifts in a breath of wind; Yakul flicks an ear and his tail; the lying wolf flicks an ear
+FLICKS = [("pm-F",dict(yakul=put(YAKUL, (12, 36, "."), (13, 36, ".uu"), (14, 34, "uu")))),
+          ("pm-F pm-2", dict(yakul=put(YAKUL, (26, 3, "u"), (27, 2, "uu."), (28, 2, "uuc")))),
+          ("pm-F pm-3", dict(pup_b=put(PUP_B, (0, 16, "."), (1, 15, "."), (1, 17, "WW")))),
+          ("pm-C", dict(yakul=put(YAKUL, (23, 8, "y"), (24, 8, "y"), (25, 7, "yy"), (26, 7, "y"), (27, 7, "a"),
+                                  (28, 7, "y"), (29, 8, "y"))))]
+
+
 # Moro's two heads (profile; turned to look at you) swap over an underlay kept in the torso image
 HEAD_A = [row[40:] for row in MORO[:14]]
 TORSO = [(row[10:40] + "".join("W" if p in PAL and q in PAL else "." for p, q in zip(HEAD_A[i], MORO_B[i])) if i < 14 else row[10:])
@@ -821,7 +881,11 @@ SPRITES = (
       "<path class='pm-a pm-e' stroke='#efe' d='M180 119.5h6m30 8h5m-118 4h4m128-12h4m-230 12h6'/>"
     # the Forest Spirit, and his reflection
     + deer(True) + f"<g transform='matrix(1 0 0 -.6 0 {1.6 * (SHORE + 10):g})' opacity='.25'>{deer(False)}</g>"
+    # a kodama peeks round the right cedar at the Forest Spirit, twice by day (only its head clears the bark)
+    + "<use class='pm-p' href='#pm-K' x='249' y='72' style='--d:3'/>"
     + img(fg())
+    + "".join(patch(c, **a) for c, a in FLICKS)
+    + "<path class='pm-c' style='animation-duration:7s' stroke='#eb9' d='M268 104.5h1m2 0h1'/>"   # Ashitaka blinks
     # Moro's tails, then the breathing group: her body and head, San
     + f"<g class='pm-q'>{spr([row[:12] for row in MORO[10:30]], MX, MY + 10)}</g>"
     + f"<g class='pm-r'>{spr(TORSO, MX + 10, MY)}"
@@ -836,13 +900,26 @@ SPRITES = (
     # night falls on the land; a warm wash at dusk and dawn
     + img(night(), extra=" class='pm-N pm-b'")
     + f"<rect class='pm-W pm-b' width='{W}' height='{H}' fill='#fa6'/>"
-    # lights that the night does not dim: kodama, Ashitaka's cursed arm, and after dark the apes' eyes and fireflies
-    + "<defs><g id='pm-o'><path fill='#bdc' d='M-1 4h2v1h1v1h-1v3h-2v-3h-1v-1h1zm-2 2h1v1h-1zm5 0h1v1h-1zm-4 3h1v2h-1zm3 0h1v2h-1z'/>"
-      "<g class='pm-k'><path fill='#efe' d='M-3-4h5v1h1v1h1v4h-1v1h-1v1h-5v-1h-1v-6h1z'/>"
+    # lights that the night does not dim. The Nightwalker's glow lies on the water in broken streaks and
+    # wades with him; these and the moon's path are placed only where nothing nearer stands (checked against
+    # the foreground, Moro and San, breathing included), so they need no occluder over them
+    + "<g class='pm-L'><path class='pm-a' stroke='#7de' d='M211 103.5h6m5 2h8m-16 3h5m6 3h6m-19 3h4m4 4h7m-11 5h3'/>"
+      "<path class='pm-a pm-e' stroke='#5bd' d='M216 104.5h4m-12 2h5m13 2h4m-13 2h7m-1 5h5m-15 5h4'/></g>"
+    # kodama (glowing faintly after dark), Ashitaka's cursed arm, and after dark the apes' eyes and fireflies
+    + f"<defs><path id='pm-O' fill='#cfe' fill-opacity='.11' d='{oval(7, 9, 2)}'/>"
+      "<g id='pm-o'><path fill='#bdc' d='M-1 4h2v1h1v1h-1v3h-2v-3h-1v-1h1zm-2 2h1v1h-1zm5 0h1v1h-1zm-4 3h1v2h-1zm3 0h1v2h-1z'/>"
+      "<g id='pm-K' class='pm-k'><path fill='#efe' d='M-3-4h5v1h1v1h1v4h-1v1h-1v1h-5v-1h-1v-6h1z'/>"
       "<path fill='#123' d='M-3-1h2v2h-2zm4 0h1v1h-1zm-1 2h1v1h-1z'/></g></g></defs>"
+    + "<g class='pm-N'>" + "".join(f"<use href='#pm-O' x='{x}' y='{y}'/>" for x, y, _ in KOD) + "</g>"
     + "".join(f"<use href='#pm-o' x='{x}' y='{y}' style='--d:{d}'/>" for x, y, d in KOD)
     + f"<path class='pm-a' stroke='#c5f' d='M{YX + 24} {YY + 22}.5h1m-2 1h1'/>"
-    + "<g class='pm-N'><path stroke='#e33' d='" + "".join(f"M{x - 2} {y}.5h1m2 0h1" for x, y in APES) + "'/>"
+    # the apes' eyes blink, each in its own time; deep in the night a fourth pair opens on the far-right trunk
+    + "<g class='pm-N'>" + "".join(f"<path class='pm-B' style='animation-delay:-{2.3 * i:g}s' stroke='#e33' d='M{x - 2} {y}.5h1m2 0h1'/>"
+                                   for i, (x, y) in enumerate(APES))
+    + "<g class='pm-A'><path class='pm-B' stroke='#e33' d='M311 62.5h1m2 0h1'/></g>"
+      # the moon's path on the pool, under the moon, cut where Moro's head is nearer
+      "<path class='pm-a' stroke='#eec' d='M104 104.5h3m3 0h3m-10 5h5m1 6h4m-3 5h6'/>"
+      "<path class='pm-a pm-e' stroke='#eec' d='M106 102.5h4m-3 5h5m-10 5h3m3 0h5m-2 5h4m-8 6h5'/>"
       "<path class='pm-f' stroke='#fd6' d='M118 96.5h1m64-30h1m40 62h1m-140 12h1m90-60h1m68 14h1m-216 20h1'/>"
       "<path class='pm-f pm-e' stroke='#fd6' d='M150 84.5h1m60-14h1m-110 50h1m120 24h1m-50-88h1m90 60h1m-240-30h1'/></g>"
 )
@@ -859,6 +936,9 @@ CSS = (
     # and sinks at dawn with his head beside the moon; both ends of the loop are below the trees
     ".pm-n{animation:pm-n 220s steps(96) infinite}"
     "@keyframes pm-n{from,26%{translate:0 96px}33%{translate:0}68%{translate:-96px}75%,to{translate:-96px 96px}}"
+    # ... and his light on the water fades in as he clears the trees, wades with him step for step, and goes as he sinks
+    ".pm-L{opacity:0;animation:pm-L 220s steps(96) infinite}"
+    "@keyframes pm-L{from,30%{translate:0;opacity:0}33%{translate:0;opacity:1}68%{translate:-96px;opacity:1}71%,to{translate:-96px;opacity:0}}"
     # shared on/off blink; pm-e is the opposite phase
     ".pm-a{animation:pm-a 5s steps(1) infinite}.pm-a.pm-e{animation-delay:-2.5s}@keyframes pm-a{50%{opacity:0}}"
     # Forest Spirit: walk out, stand, (fade at dusk, return at dawn,) turn, walk off; sun shafts fade with him
@@ -879,6 +959,16 @@ CSS = (
     # kodama heads click round and rattle
     ".pm-k{animation:pm-k 11s calc(var(--d)*-1.7s) steps(1) infinite}"
     "@keyframes pm-k{80%{rotate:90deg}84%{rotate:0deg}87%{rotate:90deg}91%{rotate:-90deg}95%{rotate:0deg}}"
+    # one peeks out from behind the right cedar at 11% (the Forest Spirit is on the water) and at 91% (quiet midday)
+    ".pm-p{animation:pm-p 220s steps(1) infinite}@keyframes pm-p{11%,15%{translate:-3px}11.4%,14.6%{translate:-6px}"
+    "15.4%{translate:0}91%,95%{translate:-3px}91.4%,94.6%{translate:-6px}95.4%{translate:0}}"
+    # ear and tail flicks on their own periods (none shares a period with Moro's 29 s head turn); the cape lifts
+    ".pm-F{opacity:0;animation:pm-F 13s steps(1) infinite}.pm-2{animation-duration:17s}.pm-3{animation-duration:23s}"
+    "@keyframes pm-F{90%,95%{opacity:1}93%,97%{opacity:0}}"
+    ".pm-C{opacity:0;animation:pm-C 11s steps(1) infinite}@keyframes pm-C{70%{opacity:1}88%{opacity:0}}"
+    # apes: blinks, and the fourth pair's eyes open 40-62%
+    ".pm-B{animation:pm-B 7s steps(1) infinite}@keyframes pm-B{92%{opacity:0}96%{opacity:1}}"
+    ".pm-A{opacity:0;animation:pm-A 220s steps(1) infinite}@keyframes pm-A{40%{opacity:1}62%{opacity:0}}"
     # fireflies
     ".pm-f{animation:pm-f 14s steps(9) infinite alternate,pm-a 4s steps(1) infinite}.pm-f.pm-e{animation-delay:-14s,-2s}"
     "@keyframes pm-f{to{translate:9px -9px}}"

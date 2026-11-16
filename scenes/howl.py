@@ -1,13 +1,14 @@
 """Howl's Moving Castle: the castle strides in along the ridge above the alpine lake, sits down to rest by the
 water's edge, then stands and ambles off down the hill, while the household (Markl in his bearded disguise, Heen, Sophie,
-Calcifer, Howl, and the Witch of the Waste in her chair) waits in the flower meadow and Turnip Head hops by.
+Calcifer, Howl, and the Witch of the Waste in her chair) waits in the flower meadow, and Turnip Head holds the end
+of the washing line.
 
-Static layer (PNG, 320x180): sky, cumulus, snowy peaks, lake, ridge, flower meadow, Calcifer's pool of light.
+Static layer (PNG, 320x180): sky, cumulus, snowy peaks, lake, Howl's childhood hut and waterwheel on the far shore,
+ridge, flower meadow, the washing line and Turnip Head below the neck, Calcifer's pool of light.
 Sprites (SVG), back to front: billowing cloud caps and drifting small clouds, birds, lake glints, the castle (shadow, smoke, then its parts as
 viewports onto one atlas PNG: smokestacks, mast, roofs, legs, fins, stern, upper dome, bow, lower hull, front
-dome, and the eyelids of its eye-ports), Turnip Head, the
-stems of the flowers in front of him, the characters (one PNG, so Turnip Head passes BEHIND them) with their
-blinks, flutters and greetings, Calcifer, the heads of the wind-blown flowers.
+dome, and the eyelids of its eye-ports), its steam, Turnip Head's head, the hems of the washing, the characters
+(one PNG) with their blinks, flutters and greetings, Calcifer, the heads of the wind-blown flowers.
 
 The castle's loop is 180s and starts 45s in, so the theme opens on it resting. In loop time: 0-36s it walks in
 from the left, one footfall every 0.6s, 4px a footfall (each leg pair jumps ahead of the body while lifted, so a
@@ -16,8 +17,8 @@ last; 36-40s it sits, each part sinking a beat after the one in front, the hull 
 it rests: fins drooped, eye-ports half shut, breathing 1px; 112-116s it stands; 117-171s it ambles off to the
 right at half the pace and, from the brow of the hill at x=238, down the slope and out of the frame. The
 household greets it as it arrives and sits (32-41s) and sees it off (112-122s): Sophie waves, Markl throws his
-arms up, the Witch wakes, Calcifer flares.
-Other moments: Turnip Head every 80s, birds every 67s.
+arms up, the Witch wakes, Calcifer flares; steam sighs from under the hull at 38-44s and 112-118s.
+Other moments: birds every 67s, Turnip Head nods every 13s, Markl's disguise slips for 2.5s every 41s.
 """
 import base64, math, random, struct, zlib
 from lib import Canvas, UNPAINTED, hx
@@ -94,7 +95,7 @@ def mountains(cv, peaks, lit, shd, snow=True):
 WIND = [(34, 146), (206, 149), (262, 152), (56, 151), (113, 146), (244, 150), (20, 152), (72, 144), (232, 153)]
 
 
-TBASE = 149        # the row Turnip Head's pole stands on as he hops across the knoll (sprite, drawn over the PNG)
+TBASE = 149        # the row Turnip Head's pole stands on
 
 
 def g1(x):
@@ -128,14 +129,15 @@ def draw():
         cv.rect(x, HZ - 1, 1, 1, HILL2)
     # lake: lighter far water, shimmer under the far shore, reflections of the two snowy massifs
     bands(cv, HZ, [(97, LAKE[0]), (105, LAKE[1]), (116, LAKE[2]), (H, LAKE[3])])
-    for x in range(0, W, 6):
-        cv.rect(x, HZ + 1, 4, 1, C1)
-        cv.rect(x + 3, HZ + 3, 2, 1, C1)
+    for x in range(0, W, 6):         # shimmer dashes of uneven length, so they don't read as a ruled line
+        cv.rect(x, HZ + 1, 2 + x // 6 * 7 % 4, 1, C1)
+        cv.rect(x + 3, HZ + 3, x // 6 * 5 % 3, 1, C1)
     for cx, n in [(34, 30), (270, 34)]:
         for i in range(5):
             cv.rect(cx - n + i * 5, HZ + 5 + 2 * i, 2 * n - i * 11, 1, LAKE[2] if i < 3 else LAKE[3])
         cv.rect(cx - 6, HZ + 6, 12, 1, C1)
         cv.rect(cx - 3, HZ + 8, 7, 1, C1)
+    cv.paint(HUT, HPAL, 286, 83)     # Howl's childhood hut on the far shore, its waterwheel in the lake
     # the sunlit ridge with small far flowers on every third row
     far = {0: WHT, 5: PNK, 11: YEL, 16: G1, 20: WHT, 25: LIL}
     for x in range(W):
@@ -179,6 +181,19 @@ def draw():
             y -= y == TBASE
             cv.rect(x, y, 2 if y > 142 else 1, 1, pet)
             cv.set(x, y + 1, G3)
+    # washing day at the lake: a line from a post to Turnip Head's glove, the tops of the cloths pegged on it
+    # (their lower rows are sprites that sway), and Turnip Head himself below the neck (his head nods: a sprite)
+    cv.rect(LP - 1, 127, 2, 20, "#5b4636")
+    cv.rect(LP - 2, 127, 4, 1, "#8a5a3c")
+    for x in range(LP + 1, TX):
+        cv.set(x, ly(x), "#5b4636")
+    for c in CLOTHS:
+        for (x, y), col in cloth(*c[:5]).items():
+            if y < ly(x) + c[2] - 2:
+                cv.set(x, y, col)
+        cv.set(c[0], ly(c[0]) - 1, "#8a5a3c")
+        cv.set(c[0] + c[1] - 1, ly(c[0] + c[1] - 1) - 1, "#8a5a3c")
+    cv.paint(TURNIP[12:], TPAL, TX, TY + 12)
     for x, y in WIND:                # stems of the tall flowers whose heads sway (sprites)
         cv.rect(x, y + 2, 1, 5, G3)
         cv.set(x + 1, y + 4, G2)
@@ -513,6 +528,18 @@ def P_jaw():
     for a in range(0, 628, 40):                  # a hub
         cv.set(round(43.5 + 2.2 * math.cos(a / 100)), round(85.5 + 2.2 * math.sin(a / 100)), FAM["i"][0 if a > 300 else 2])
     cv.rect(43, 85, 2, 2, K)
+    # The mouth: under the hull's bottom edge a dark slot, then the lit top of the lip (the jaw hangs 1px lower
+    # than the hull, see part()), and a 2px rim of light bounced up from the meadow along the lip's lower curve
+    hd = P_head()
+    for x in range(cv.w):
+        ys = [y for y in range(cv.h) if cv.px[y][x] != UNPAINTED]
+        hy = [y for y in range(cv.h) if hd.px[y][x] != UNPAINTED]
+        if ys and hy and ys[0] <= hy[-1] < ys[-1] - 3:
+            cv.set(x, hy[-1], K)
+            cv.set(x, hy[-1] + 1, h[1])
+        if ys:
+            cv.set(x, ys[-1] - 1, h[1])
+            cv.set(x, ys[-1] - 2, h[2])
     hip(cv, 48, 90)
     hip(cv, 57, 90)
     return outline(cv)
@@ -812,7 +839,7 @@ def part(name, style, at=None, attrs=""):
     animations, so the part moves within the viewport (no url(#id) clip needed, which T3 would reject); the
     viewport is SIT rows taller than the cell so the part can sink when the castle sits down."""
     x0, y0, w, h, ax = CELL[name]
-    x, y = at or (CX0 + x0, CY + y0)
+    x, y = at or (CX0 + x0, CY + y0 + (name == "jaw"))
     return (f"<svg{attrs} x='{x}' y='{y}' width='{w}' height='{h + SIT}'>"
             f"<use style='{style}' href='#hw-a' x='{-ax}'/></svg>")
 
@@ -824,14 +851,60 @@ def puff(x, y, d=0):
     return (f"<g transform='translate({x} {y})'{st}><g class='hw-s'>"
             "<path d='M-1-1h3v3h-3z'/>"
             "<path style='--e:2.4s' d='M-3-2h1v-1h4v1h1v4h-1v1h-4v-1h-1z'/>"
-            "<path style='--e:1.2s' fill='#abd' d='M-4-2h1v-1h1v-1h4v1h1v1h1v4h-1v1h-1v1h-4v-1h-1v-1h-1z'/></g></g>")
+            "<g style='--e:1.2s'><path fill='#99a' d='M-2-5h3v1h1v1h1v3h-1v1h-5v-1h-1v-3h1v-1h1z'/>"
+            "<path fill='#778' d='M-5-1h3v1h4v1h1v3h-1v1h-7v-1h-1v-3h1z'/></g></g></g>")
 
 
 SX, SY = CHX + 20, CHY + 4        # Sophie's top-left
 HX, HY = CHX + 58, CHY + 2        # Howl's
 FX, FY = 159, 123                 # Calcifer's (flame tips; his body starts 4 rows lower)
-TX, TY = -130, 116                # Turnip Head, parked off-canvas to the left
+TX, TY = 76, 116                  # Turnip Head, planted left of the household holding the washing line
+LP = 43                          # the post at the line's other end (narrow windows crop x < ~34)
 assert TY + len(TURNIP) - 1 == TBASE
+ly = lambda x: round(127 + 3 * (x - LP) / (TX - LP) + 3 * math.sin(math.pi * (x - LP) / (TX - LP)))  # the line's sag
+# the washing: (left x, width, drop, colour, shade, sway period): a sheet, Sophie's blue dress, a pink towel, a
+# lilac cloth
+CLOTHS = [(46, 8, 10, "#f3efe4", "#c9c2b4", 3.9), (56, 7, 9, "#4a78c9", "#365aa6", 4.7), (65, 5, 6, PNK, PK2, 3.3),
+          (71, 4, 5, LIL, "#8f8fc8", 2.9)]
+
+
+def cloth(x0, w, h, c, s):
+    """{(x, y): colour} for a cloth hanging from the line: shaded down a fold (wide ones) and its right edge, a hem."""
+    return {(x, y): s if x - x0 in (w // 3 if w > 6 else -1, w - 1) or y == ly(x) + h else c
+            for x in range(x0, x0 + w) for y in range(ly(x) + 1, ly(x) + h + 1)}
+
+
+def pix(d):
+    """{(x, y): colour} -> stroked paths (via strokes)."""
+    xs, ys, cols = [x for x, _ in d], [y for _, y in d], list(dict.fromkeys(d.values()))
+    rows = ["".join(str(cols.index(d[x, y])) if (x, y) in d else "." for x in range(min(xs), max(xs) + 1))
+            for y in range(min(ys), max(ys) + 1)]
+    return strokes(rows, {str(i): c for i, c in enumerate(cols)}, min(xs), min(ys))
+
+
+HUT = [
+    "....rr...........",
+    "...rrRR..........",
+    "..rrrRRR.........",
+    ".rrrrRRRR........",
+    "..wwwwwW.........",
+    "..wwlwwW....nnn...",
+    "..wwwwwW...n.o.n..",
+    "..wwwwwW..n..o..n.",
+    "..WWWWWW..nooooon.",
+    ".........fn..o..nf",
+    "...........n.o.n..",
+    "............nnn...",
+]
+HPAL = {"r": "#8e3a3b", "R": "#6a4a66", "w": "#c3b9ab", "W": "#8f8582", "l": "#ffd85e", "o": "#5b4636", "n": "#8a5a3c",
+        "f": "#ffffff"}
+# Markl with his disguise slipped: hair, a boy's face, the hood fallen to his shoulders (over MARKL rows 0-10)
+MBOY = ["....nnnn....", "...nnnnnn...", "..vnnnnnnv..", "..vnskskNv..", "..vVssssV...", "..vVssmsVv..",
+        "..vVVssVVv..", ".vvvvVVvvvv.", ".vvVvvvvVvv.", ".vvVvvvvVvv.", ".vvvvvvvvvv."]
+# steam sighing out from under the hull as it sits down and stands up: stern, belly, bow
+STEAM = [(139, 101, ["....ww....", "..wwwwww..", ".wwwwwwwww", "wwwwwwwwww", "cwwwwwwwcc", ".cccccccc."]),
+         (176, 109, ["...ww..www..", ".wwwwwwwwwww", "wwwwwwwwwwww", "cwwwwwwwwwwc", ".cccccccccc."]),
+         (213, 101, [".www......", "wwwwww.ww.", "wwwwwwwwww", "cwwwwwwwwc", ".ccwwwwcc.", "...cccc..."])]
 bird = lambda x, y, up: (f"M{x} {y}.5h1m3 0h1m-4 1h3" if up else f"M{x + 1} {y}.5h3m-4 1h1m3 0h1")
 FLOCK = [(900, 60), (909, 64), (917, 58), (926, 65), (934, 61)]
 
@@ -863,15 +936,17 @@ SPRITES = (
     + "".join(f"<g class='hw-k' style='--k:{k};opacity:calc(1 - var(--w))'><path fill='{FAM['d'][2]}' "
               f"d='M{CX0 + x + 1} {CY + y + 1}h3v2h-3zm7 1h3v2h-3z'/></g>" for k, x, y in ((3, 43, 28), (2, 50, 47)))
     + "</g>"
-    # Turnip Head hops through behind the others
-    f"<g class='hw-t'><g class='hw-j'>{img(art(TURNIP, TPAL), TX, TY)}</g></g>"
-    # the tall flowers are rooted nearer than Turnip Head: their heads are sprites further down, and the part of
-    # each PNG stem that his pole can reach is redrawn here so it stays in front of him too
-    + f"<path fill='{G3}' d='{''.join(f'M{x} {y + 2}h1v{TBASE - y - 1}h-1z' for x, y in WIND if y + 2 <= TBASE)}'/>"
-      f"<path fill='{G2}' d='{''.join(f'M{x + 1} {y + 4}h1v1h-1z' for x, y in WIND if y + 4 <= TBASE)}'/>"
+    # steam sighs out from under the hull as the castle sits down and as it stands up (hw-e)
+    + f"<g class='hw-e'>{''.join(strokes(r, {'w': '#fff', 'c': C2}, x, y) for x, y, r in STEAM)}</g>"
+    # Turnip Head's head, nodding now and then; the hems of the washing swaying on the line
+    + f"<g class='hw-b'>{img(art(TURNIP[:12], TPAL), TX, TY)}</g>"
+    + "".join(f"<g class='hw-w' style='--t:{c[5]}s;--d:-{i}s'>"
+              f"{pix({(x, y): v for (x, y), v in cloth(*c[:5]).items() if y >= ly(x) + c[2] - 3})}</g>"
+              for i, c in enumerate(CLOTHS))
     # Heen, Sophie and Howl, then their idle life: ribbon, hem, hair, jacket, tail, blinks
     + img(cast(), CHX - 20, CHY)
-    + f"<path class='hw-z' style='--t:5.7s;--d:-3s' stroke='#f8d3b0' d='M{CHX - 15} {CHY + 21}.5h1m1 0h1'/>"   # Markl blinks
+    + f"<g class='hw-z' style='--t:41s;--d:-20s'>{strokes(MBOY, CPAL, CHX - 19, CHY + 18)}</g>"   # Markl's disguise slips
+    + f"<path class='hw-z' style='--t:5.7s;--d:-3s' stroke='#f8d3b0' d='M{CHX - 14} {CHY + 21}.5h1m1 0h1'/>"   # Markl blinks
     + f"<path stroke='#f8d3b0' d='M{CHX + 82} {CHY + 19}.5h1m3 0h1'/>"   # the Witch dozes, eyes shut
     # the household greets the castle as it arrives and sits, and sees it off when it stands (the hw-r windows):
     # Sophie waves (a sleeve, then two hand frames), Markl throws his arms up, the Witch opens her eyes
@@ -940,8 +1015,11 @@ CSS = (
     ".hw-s{fill:#667;animation:hw-s 3.6s steps(4) var(--d,0s) infinite}@keyframes hw-s{to{translate:-4px -8px}}"
     ".hw-s path{animation:hw-p 3.6s steps(1) calc(var(--d,0s) - var(--e,0s)) infinite}@keyframes hw-p{33.3%,to{opacity:0}}"
     # moments
-    ".hw-t{animation:hw-t 80s steps(1120) infinite}.hw-d{animation:hw-t 320s steps(1120) infinite}@keyframes hw-t{to{translate:1120px}}"
-    ".hw-j{animation:hw-j .5s steps(3) infinite alternate}@keyframes hw-j{to{translate:0 -6px}}"
+    ".hw-d{animation:hw-t 320s steps(1120) infinite}@keyframes hw-t{to{translate:1120px}}"
+    ".hw-b{animation:hw-b 13s steps(1) infinite}@keyframes hw-b{88%{translate:0 1px}94%{translate:none}}"
+    # steam, on the castle's clock: puffs out at 21% (as it sits) and 62% (as it stands), rises 6px and fades
+    ".hw-e{opacity:0;animation:hw-e 180s steps(1) -45s infinite}@keyframes hw-e{21%,62%{opacity:1;translate:none;"
+    "animation-timing-function:steps(6)}24.5%,65.5%{opacity:0;translate:0 -6px}}"
     ".hw-v{animation:hw-v 67s steps(670) infinite}@keyframes hw-v{to{translate:-1340px -40px}}"
     ".hw-c{animation:hw-c 1.6s steps(1) infinite}@keyframes hw-c{25%{translate:1px -1px}50%{translate:0 -3px}75%{translate:-1px -1px}}"
     ".hw-r{opacity:0;animation:hw-r 180s steps(1) -45s infinite}@keyframes hw-r{18%,62.5%{opacity:1}23%,68%{opacity:0}}"

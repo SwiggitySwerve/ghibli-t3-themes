@@ -1,8 +1,7 @@
 """Nausicaa of the Valley of the Wind: the valley seen from the edge of the Sea of Corruption.
 An Ohmu crawls across the jungle floor, its legs stepping in a wave and its armour plates rippling
 with them, a young one at its tail; Nausicaa escorts it on her Mehve with Teto on her shoulder; Lord
-Yupa watches from Kai, his horseclaw; the castle with its great wind wheel and the windmills stand
-on golden hills behind, where three Valley girls wave; a fossil God Warrior stands in the far haze.
+Yupa watches from Kai, his horseclaw, with Kui behind under a pack; the castle with its great wind wheel and the windmills stand on golden hills behind, where three Valley girls wave; a fossil God Warrior stands in the far haze.
 
 320x180. Static layers, so things can pass between them:
   draw()    sky gradient (the base PNG)
@@ -24,18 +23,22 @@ turn. Strips overlap by 1px, and offsets are only ever 0 or 1, so no gap can ope
 at its tail is rigid and takes quick short steps: its six legs are planted for 3 ticks and lifted
 for 1, each one tick behind the leg in front.
 
-The Ohmu and Nausicaa repeat every 60s, everything else every 120s (t = 0 is the still the build
-tools show):
-  0-35.5s      the Ohmu crosses from the centre and out to the right, the young one last; as it
-  35.6-95.5s   leaves, the next head comes in from the left (fully in view by 55.5s), crosses and
-  95.6-120s    leaves in turn; then once more
-  59-71.5s,    Nausicaa, hovering right of the castle, turns as its head passes under her and glides
-  119-11.5s    along just behind its head at its pace; behind the right framing fungus she turns and
-               drifts back, facing the next crossing
-  28-37s       the Valley gunship skims the fields
-  66-77s       a yanma flies across
-  87-129s      the Tolmekian fleet crosses behind the castle; the Ohmu's eyes flush red (100-118.5s)
-               as it comes in, and calm to blue as it reaches Nausicaa
+The Ohmu and Nausicaa repeat every 60s, everything else every 120s. t = 0 is the still the build
+tools show and where the scene opens, so it is a quiet moment: she is drifting back and nothing else is
+under way. (Every story animation is delayed -105s from where it was first written: a whole number of
+the Ohmu's 1.5s strides and of the 15s wind cycle, so legs and rotor stills stay in step.)
+  50.6s, 110.6s   the Ohmu's head comes in from the left, fully in view 10.5s later; it crosses and leaves
+                  to the right by 50.5s / 110.5s, the young one last
+  14.25-21.25s,   Nausicaa, hovering right of the castle, turns as its head passes under her and, with a
+  74.25-81.25s    puff from her jet, glides along just behind its head at its pace; in clear sky short of the
+                  right windmill she turns and drifts back, facing the next crossing. The three girls wave
+                  her off (for 4.8s), and now and then she blinks
+  21-32s          a yanma flies across
+  42-84s          the Tolmekian fleet crosses behind the castle; the Ohmu's eyes flush red (55-73.5s) as it
+                  comes in, the young one's with them (calming 3.5s later), and calm to blue as it reaches
+                  Nausicaa; the wind dies with the rage (57.3-72.3s: rotors, streamer and gusts stop), and as
+                  the eyes calm four golden feelers rise from its head towards her (71-84s)
+  103-112s        the Valley gunship skims the fields
 Everything that travels moves in whole-pixel steps.
 """
 import base64, math, random, struct, zlib
@@ -517,6 +520,30 @@ def baby():
     return cv
 
 
+BABY_EYES = [(-10, 139), (-10, 143), (-7, 142)]   # the young one's eyes on the canvas, as img(baby(), -32, OB - 12) places them
+
+
+def tendrils():
+    """The golden feelers the Ohmu raise when they calm, drawn behind the shell and risen 24px through it.
+    Drawn as they stand at the peak: k px above the shell top, each bows outward from its root, then curves in
+    so its tip reaches towards Nausicaa (above x ~102), with a gentle sway all of them share. A pale luminous
+    core with a 1px deep-gold edge on its shaded (right) side, so it holds against the golden field, tapers
+    from 2px at the root to 1px, then loses its edge for the last few px up to a bright tip."""
+    cv = Canvas(W, H)
+    for bx, h, out, tip in [(86, 14, -2, 92), (95, 19, -1, 99), (104, 22, 0, 104), (113, 16, 1, 109)]:
+        y0, px = OB - round(ohmu_top(bx)) + 24, None
+        for k in range(-4, h + 1):
+            u = max(0, k) / h
+            x = bx + round(out * math.sin(math.pi * u) + (tip - bx) * u * u + .8 * math.sin(k * .22))
+            w = 2 if k < h * .4 else 1
+            for xx in range(min(x, px if px is not None else x), max(x, px if px is not None else x) + w):
+                cv.set(xx, y0 - k, "#fff2b0" if k > h - 2 or xx < x + w - 1 or w == 1 and k < h * .7 else "#ffe27a")
+            if k < h * .75:
+                cv.set(x + w, y0 - k, "#b8780e")
+            px = x
+    return cv
+
+
 def jungle():
     """Behind the Ohmu: hazy fungi on the last of the fields, the jungle floor, mid-distance fungi."""
     cv = Canvas(W, H)
@@ -535,7 +562,7 @@ def jungle():
                 k = y - y0
                 if k > 1 or (k == 0 and (x + y) % 4 == 0) or (k == 1 and (x + y) % 2):
                     cv.set(x, y, c)
-    fungus(cv, 254, 142, 103, 13, J2, T1, J3, shelves=[(-11, 121, 6)])
+    fungus(cv, 254, 142, 109, 13, J2, T1, J3)
     tubes(cv, 262, 141, (6, 10, 13, 7), J2, T1)
     return cv
 
@@ -797,6 +824,21 @@ YUPA2 = {3: "........sggg............", 4: ".......ccgggc....KKKK...", 5: ".....
          6: ".....ccccccccc..KKeKKyyy", 7: ".....ccCcccccc..KKKKKyyy", 8: "....cccCcccccc...KKKk.ye",
          11: "..ccc.KKKcKKKKKKKKKk....", 12: ".cc..KKKKcKKKKKKKKk.....", 15: ".kk...kKKKKKKKKkk......."}
 UX, UY = 66, 131
+# Kui, Yupa's second horseclaw, half a step behind Kai: the same bird with a pack lashed on instead of a rider.
+KUI = ["." * 24] * 3 + [
+    ".................KKKK...",
+    "................KKKKKK..",
+    "................KKeKKyyy",
+    "................KKKKKyyy",
+    ".......lll.......KKKk.ye",
+    ".....llrrrll.....KKk....",
+    "....lrrrrrrrl....KKk....",
+    "....lrHrrrrHl...KKKk....",
+    "....lkHkkkkHkKKKKKKk....",
+    ".....KKHKKKKHKKKKKk.....",
+    ".....KKKKKKKKKKKKKk.....",
+] + YUPA[14:]
+KUI2 = {**{i: KUI[i][:15] + YUPA2[i][15:] for i in range(3, 9)}, 15: YUPA2[15]}    # head dip, tail flick
 
 
 # Tolmekian warships, far off and hazy, heading left: a heavy transport and two corvettes.
@@ -872,6 +914,12 @@ def build():
     back, far, fore = mid(), jungle(), near()
     glints = sorted(GLOWS)[::3]
     d8, small = sheet(turn(8, 4, 6), "id='nc-i'")
+    d14, wheel = sheet(turn(14, 8, 4), "id='nc-wh'")
+    # the wind dies while the herd rages: at T1 every rotor is swapped for a still of the frame it shows then, and
+    # 15s later (a whole number of turns of each) the still is swapped back on that same frame, so neither swap
+    # pops. Mill periods divide both 15 and 120.
+    T1, mills = 57.3, list(zip(MILLS, ("2.142857", "2.5", "3")))
+    still = lambda dur, n: int(T1 % float(dur) / float(dur) * n)
     play = lambda n, dur: f"style='--n:{n};animation-duration:{dur}s'"
     body, _, by = crop(ohmu())
 
@@ -881,27 +929,30 @@ def build():
                 f"viewBox='{x} 0 {w} {body.h}'><use href='#nc-om'/></svg>{extra}</g>")
 
     return [
-        f"<defs>{small}"
+        f"<defs>{small}{wheel}"
         f"<image id='nc-om' width='{body.w}' height='{body.h}' href='data:image/png;base64,{png(body)}'/>"
         f"<path id='nc-lg' stroke='#5a7aa6' stroke-width='2' d='M4 {OB - 4}v5m7-5v5'/>"
         f"<path id='nc-lb' stroke='#5a7aa6' d='M.5 {OB - 2}v3m-12-3v3'/>"
         f"<g id='nc-ea'>{discs(EYES[::2])}</g><g id='nc-eb'>{discs(EYES[1::2])}</g></defs>",
         # two cirrus streaks and the warships cross behind the big clouds and the mountains
         "<path class='nc-c' stroke='#fff' opacity='.85' d='M-70 21.5h30m-38 1h52m-40 1h30M-250 39.5h26m-34 1h44m-30 1h20'/>",
-        f"<g class='nc-t'>{img(fleet(), 322, 64)}</g>",
+        f"<g class='nc-t'>{img(fleet(), 322, 55)}</g>",
         img(back),
-        # the great wind wheel, the small mills (one shared sheet) and the watchtower's streamer
-        strip(turn(14, 8, 4), CX - 14, CY - 14, "nc-x", "--n:4"),
-        "".join(window(x - 8, hub - 8, d8, f"<use class='nc-x' {play(6, dur)} href='#nc-i'/>")
-                for (x, hub), dur in zip(MILLS, (2.3, 2.7, 3.1))),
-        "<g stroke='#d43'><path class='nc-a' d='M145 47.5h7m-6 1h7'/>"
+        # the Valley girls on the hill wave her off, one after another, each time she sets out (.nc-w)
+        "<g stroke='#f2e6c0'>" + "".join(f"<path class='nc-w' style='animation-delay:-{45.75 - .3 * i:g}s' "
+                                         f"d='{dots([(x + 2, y - 5, 1)])}'/>" for i, (x, y, _) in enumerate(KIDS)) + "</g>",
+        # the great wind wheel, the small mills (one shared sheet), the watchtower's streamer and the wind gusts
+        # running across the fields (.nc-wa); then their stills and a limp streamer, shown while the wind is dead
+        "<g class='nc-wa'>" + window(CX - 14, CY - 14, d14, "<use class='nc-x' style='--n:4' href='#nc-wh'/>")
+        + "".join(window(x - 8, hub - 8, d8, f"<use class='nc-x' {play(6, dur)} href='#nc-i'/>") for (x, hub), dur in mills)
+        + "<g stroke='#d43'><path class='nc-a' d='M145 47.5h7m-6 1h7'/>"
         "<path class='nc-a' style='animation-delay:-.45s' d='M145 47.5h5m-3 1h6m-3 1h4'/></g>"
-        # the Valley girls on the hill wave: a raised hand that comes and goes
-        f"<path class='nc-a' stroke='#f2e6c0' d='{dots([(x + 2, y - 5, 1) for x, y, _ in KIDS])}'/>",
-        # wind gusts running across the fields, left to right
         "<g stroke='#fffad0'>"
         f"<path class='nc-u' d='{dots([(66, 108, 10), (80, 116, 14), (58, 121, 9), (84, 109, 6)])}'/>"
-        f"<path class='nc-u' style='animation-delay:2s' d='{dots([(216, 106, 12), (232, 112, 9), (222, 119, 10), (206, 113, 6)])}'/></g>",
+        f"<path class='nc-u' style='animation-delay:2s' d='{dots([(216, 106, 12), (232, 112, 9), (222, 119, 10), (206, 113, 6)])}'/></g></g>"
+        "<g class='nc-ws'>" + window(CX - 14, CY - 14, d14, f"<use href='#nc-wh' x='-{still(3, 4)}'/>")
+        + "".join(window(x - 8, hub - 8, d8, f"<use href='#nc-i' x='-{still(dur, 6)}'/>") for (x, hub), dur in mills)
+        + "<path stroke='#d43' d='M145.5 48v6m1-6v3'/></g>",
         # the gunship and its shadow on the fields, then the jungle behind the Ohmu
         f"<g class='nc-g'>{img(stamp(GUN, GPAL), -1145, 96)}<path stroke='#7d5628' opacity='.5' d='M-1139 114.5h16'/></g>",
         img(far),
@@ -912,7 +963,12 @@ def build():
         f"<g class='nc-h'><path fill='#110f28' d='M4 {OB}h{OL - 6}v2h-{OL - 6}zM-30 {OB}h26v1h-26z'/>"
         + "".join(f"<use class='nc-l nc-k' style='--d:{i}' href='#nc-lb' x='{-6 - 4 * i}'/>" for i in range(3))
         + img(baby(), -32, OB - 12)
+        # the young one's eyes go red with the herd's, and calm a few seconds after them
+        + f"<g class='nc-r' style='animation-delay:-41s'><path stroke='#f2503c' stroke-width='2' "
+          f"d='{dots([(x, y + 1, 2) for x, y in BABY_EYES], '')}'/><path stroke='#ffd8b8' d='{dots([(x, y, 1) for x, y in BABY_EYES])}'/></g>"
         + "".join(f"<use class='nc-l' style='--d:{d}' href='#nc-lg' x='{OL - PW * (d + 1)}'/>" for d in range(9))
+        # the golden feelers, behind the shell, rise through it as the eyes calm (.nc-gt)
+        + img(tendrils(), cls='nc-gt')
         # (tail first; each strip is 1px wider than its plate and tucked under the one ahead, so no hairline
         # of background can show between neighbours at fractional zoom)
         + "".join(seg(OL - HEAD - PW * (j + 1), PW + 1, j + 3) for j in reversed(range(6)))
@@ -922,11 +978,18 @@ def build():
               "<g class='nc-r' fill='#f2503c' stroke='#7a1c2a'><use href='#nc-ea'/><use href='#nc-eb'/>"
               f"<path stroke='#ffd8b8' d='{dots([(x - 1 - (r > 3), y - 1 - (r > 3), 1 + (r > 3)) for x, y, r in EYES])}'/></g>")
         + "</g>",
+        strip([stamp(KUI, UPAL), stamp([KUI2.get(i, r) for i, r in enumerate(KUI)], UPAL)], UX - 20, UY - 1, "nc-x",
+              "--n:2;animation-duration:3.7s"),
         strip([stamp(YUPA, UPAL), stamp([YUPA2.get(i, r) for i, r in enumerate(YUPA)], UPAL)], UX, UY, "nc-x", "--n:2;animation-duration:2.8s"),
         # Nausicaa: run (.nc-n) > sway > bob > facing (.nc-v) > flutter sheet and Teto
         f"<g class='nc-n'><g class='nc-m'><g class='nc-b'><g class='nc-v'>"
+        # a puff from the jet as she sets off, left behind the engine (.nc-jp)
+        f"<g class='nc-jp'><path stroke='#fff' d='{dots([(MX + 30, MY + 20, 3), (MX + 28, MY + 21, 7), (MX + 27, MY + 22, 8)])}'/>"
+        f"<path stroke='#a9c6e4' d='{dots([(MX + 28, MY + 23, 6)])}'/></g>"
         f"{strip([mehve(i) for i in range(3)], MX, MY, 'nc-x', '--n:3;animation-duration:.75s')}"
-        f"{img(stamp(TETO, NPAL), MX + FX - 8, MY + FY - 15, cls='nc-o')}</g></g></g></g>",
+        f"{img(stamp(TETO, NPAL), MX + FX - 8, MY + FY - 15, cls='nc-o')}"
+        # her blink: lids over both eyes for a moment
+        f"<path class='nc-bl' stroke='#d99c78' d='M{MX + FX + 1} {MY + FY - 17}.5h2m1 0h2'/></g></g></g></g>",
         img(fore),
         # glints on the spore pods and filament tips, then spores drifting up
         f"<path class='nc-p' stroke='#eafffa' d='{dots([(x, y, 1) for x, y in glints])}'/>",
@@ -944,13 +1007,18 @@ CSS = (
     # sprite sheets: --n frames, stepped one frame (= one unit of the window) at a time
     ".nc-x{animation:nc-x 3s steps(var(--n)) infinite}@keyframes nc-x{to{transform:translateX(calc(var(--n)*-1px))}}"
     ".nc-c{animation:nc-c 400s steps(600) -150s infinite}@keyframes nc-c{to{transform:translateX(600px)}}"
-    ".nc-t{animation:nc-t 120s steps(1280) -33s infinite}@keyframes nc-t{to{transform:translateX(-1280px)}}"
+    ".nc-t{animation:nc-t 120s steps(1280) -78s infinite}@keyframes nc-t{to{transform:translateX(-1280px)}}"
     ".nc-a{animation:nc-a .9s steps(1) infinite}@keyframes nc-a{50%{opacity:0}}"
-    ".nc-u{opacity:0;animation:nc-u 26s infinite}@keyframes nc-u{7%{opacity:1}14%,to{opacity:0;transform:translateX(14px)}}"
-    ".nc-g{animation:nc-g 120s steps(4800) infinite}@keyframes nc-g{to{transform:translateX(4800px)}}"
+    # the girls' wave: a hand up, rocking 1px every 0.6s for 4.8s after she sets out, then down
+    ".nc-w{animation:nc-w 60s steps(1) infinite}@keyframes nc-w{1%,3%,5%,7%{transform:translateX(1px)}2%,4%,6%{transform:none}8%,to{opacity:0}}"
+    # the wind dies at 57.3s (85.25% after the -45s delay) and returns at 72.3s; see T1 in build()
+    ".nc-wa{animation:nc-wa 120s steps(1) -45s infinite}@keyframes nc-wa{85.25%{opacity:0}97.75%{opacity:1}}"
+    ".nc-ws{opacity:0;animation:nc-ws 120s steps(1) -45s infinite}@keyframes nc-ws{85.25%{opacity:1}97.75%{opacity:0}}"
+    ".nc-u{opacity:0;animation:nc-u 30s infinite}@keyframes nc-u{7%{opacity:1}14%,to{opacity:0;transform:translateX(14px)}}"
+    ".nc-g{animation:nc-g 120s steps(4800) -45s infinite}@keyframes nc-g{to{transform:translateX(4800px)}}"
     # the Ohmu: 480px in 60s = 1px per 0.125s. Legs (.nc-l) and shell segments (.nc-j) share the 1.5s stride, each
     # --d ticks late; a segment slides forward as its legs start to swing (75%) and back a half stride later
-    ".nc-h{animation:nc-h 60s steps(480) -24.375s infinite}@keyframes nc-h{from{transform:translateX(-127px)}to{transform:translateX(353px)}}"
+    ".nc-h{animation:nc-h 60s steps(480) -9.375s infinite}@keyframes nc-h{from{transform:translateX(-127px)}to{transform:translateX(353px)}}"
     ".nc-j{animation:nc-j 1.5s steps(1) calc(var(--d)*.125s - 1.125s) infinite}@keyframes nc-j{50%{transform:translateX(1px)}}"
     ".nc-l{animation:nc-l 1.5s steps(3) calc(var(--d)*.125s - 1.5s) infinite}"
     # the young one's legs: a 4-tick stride (planted 3 ticks, sliding 1px a tick; lifted 1), so each foot steps
@@ -959,15 +1027,21 @@ CSS = (
     "@keyframes nc-k{from{transform:translateX(1px)}74.9%{transform:translateX(-2px)}75%,to{transform:translateY(-1px)}}"
     "@keyframes nc-l{from{transform:translateX(4px);animation-timing-function:steps(9)}74.9%{transform:translateX(-5px)}"
     "75%{transform:translate(-2px,-1px)}to{transform:translate(4px,-1px)}}"
-    # Nausicaa: 98px with the Ohmu in 12.25s, then 47.75s drifting back the other way, facing left
-    ".nc-n{animation:nc-n 60s steps(98) -.75s infinite}@keyframes nc-n{20.417%{transform:translateX(98px)}}"
-    f".nc-v{{transform-origin:{MX + FX}px 0;animation:nc-v 60s steps(1) -.75s infinite}}@keyframes nc-v{{20.417%{{transform:scaleX(-1)}}}}"
+    # Nausicaa: 56px with the Ohmu in 7s (clear of the mill and the cap), then 53s drifting back the other way, facing left
+    ".nc-n{animation:nc-n 60s steps(56) -45.75s infinite}@keyframes nc-n{11.667%{transform:translateX(56px)}}"
+    f".nc-v{{transform-origin:{MX + FX}px 0;animation:nc-v 60s steps(1) -45.75s infinite}}@keyframes nc-v{{11.667%{{transform:scaleX(-1)}}}}"
+    # the jet puff: 8px back from the engine in 0.9s as it fades
+    ".nc-jp{opacity:0;animation:nc-jp 60s -45.75s infinite}@keyframes nc-jp{from{opacity:1;animation-timing-function:steps(8)}1.5%,to{opacity:0;transform:translateX(-8px)}}"
     ".nc-m{animation:nc-m 9s steps(4) infinite alternate}@keyframes nc-m{to{transform:translateX(4px)}}"
     ".nc-b{animation:nc-b 5.2s steps(4) infinite alternate}@keyframes nc-b{to{transform:translateY(4px)}}"
+    ".nc-bl{opacity:0;animation:nc-bl 6.3s steps(1) infinite}@keyframes nc-bl{97%{opacity:1}}"
     ".nc-o{animation:nc-o 13s steps(1) infinite}@keyframes nc-o{82%{transform:translate(6px,-9px)}}"
     ".nc-e,.nc-p{animation:nc-e 3.6s infinite alternate}.nc-e2{animation-delay:-3.6s}.nc-p{animation-duration:5s}"
     "@keyframes nc-e{from{opacity:.1}}"
-    ".nc-q{animation:nc-q 120s infinite}@keyframes nc-q{83.3%,98.7%{opacity:1}86.7%,95.8%{opacity:0}}"
-    ".nc-r{opacity:0;animation:nc-r 120s infinite}@keyframes nc-r{83.3%,98.7%{opacity:0}86.7%,95.8%{opacity:1}}"
+    ".nc-q{animation:nc-q 120s -45s infinite}@keyframes nc-q{83.3%,98.7%{opacity:1}86.7%,95.8%{opacity:0}}"
+    ".nc-r{opacity:0;animation:nc-r 120s -45s infinite}@keyframes nc-r{83.3%,98.7%{opacity:0}86.7%,95.8%{opacity:1}}"
+    # the feelers rise 24px over 4s from 71s, hold, and fade by 84s (-49s puts 71s at 0%)
+    ".nc-gt{opacity:0;animation:nc-gt 120s -49s infinite}"
+    "@keyframes nc-gt{from{animation-timing-function:steps(24)}3.33%,8.33%{opacity:1;transform:translateY(-24px)}10.83%,to{opacity:0;transform:translateY(-24px)}}"
     ".nc-s{opacity:0;animation:nc-s 16s linear infinite}@keyframes nc-s{20%,70%{opacity:.9}to{transform:translate(8px,-42px)}}"
 )

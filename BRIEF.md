@@ -3,13 +3,13 @@
 ## Polish round (current task)
 The user asked every scene agent to **clean up its scene, add more references and characters from the film, and tighten things up**. Do it in this order.
 
-1. **Clean up first, to free budget.** Delete dead code and unused sprites, defs, classes and keyframes. Merge same-colour paths and drop redundant animations. Fix stray or isolated pixels, jaggy or inconsistent outlines, muddy colour clusters and off-palette colours. Most scenes sit at 18–19.7K of 20K, so new content must be paid for by the savings.
+1. **Clean up first, to free budget.** Delete dead code and unused sprites, defs, classes and keyframes. Merge same-colour paths and drop redundant animations. Fix stray or isolated pixels, jaggy or inconsistent outlines, muddy colour clusters and off-palette colours. Scenes sit at about 21–23K of 50K.
 2. **Add references and characters** that a fan would recognise: a secondary character, a creature, a prop, or an iconic moment from the film (your message has ideas, but use your own judgment). Prefer a few that read clearly at this size over many specks. A new character should have idle life, or come through as a "moment" in the existing cycle.
 3. **Tighten:** composition and readability under the dark overlay; animation timing (stagger the moments so something happens through a ~2-minute window without crowding); loop seams; whole-pixel stepping.
 4. **Keep everything that is already right:**
    - **Depth order** from the water audit: water effects first, nearer static occluders redrawn over moving sprites, distant things behind near things.
    - `THEME["position"]`, and the scene must still work in `wide.png`, a new 1680x780 pane with the message box outlined, plus `theme.png`, `portrait.png` and `app.png`.
-   - No `url(#id)`; ≤ 20,000 with no `VALIDATOR FAIL`.
+   - No `url(#id)`; ≤ 50,000 with no `VALIDATOR FAIL` or `SVG XML FAIL`.
    - Any change the user made or approved, as listed in your message.
 5. Edit only your own scene file. Don't run install.py; the main session installs and verifies.
 
@@ -69,7 +69,7 @@ These colours give the whole app (sidebar, buttons, inputs, borders) a palette t
 - The appearance is dark. Check text contrast in app.png.
 
 ## Hard constraints
-- **The theme's whole css must be ≤ 20,000 characters.** The build prints `theme css N / 20000`, and the chat-chrome rules take about 1,000 of that. Stay a couple of hundred under to leave room for later tweaks.
+- **The theme's whole css must be ≤ 50,000 characters.** The build prints `theme css N / 50000`, and the chat-chrome rules take about 1,000 of that. Stay a couple of hundred under to leave room for later tweaks.
 - **Safe zone.** The image is `cover`, anchored at the bottom. The composer hides the bottom ~13% of the canvas, and narrow windows crop the sides (check portrait.png). Keep hero characters within the middle ~42% of the width (x ≈ 70–170 of 240), landmarks within the middle ~67%, and everything important between ~18% and ~83% of the height.
 - **Performance.** The SVG is a CSS background, so every animation tick re-rasterizes the image, and this runs all day. Keep the number of simultaneously animating elements moderate (tens, not hundreds). Never animate `filter` or large blurred or translucent areas, and avoid full-canvas animated layers. Prefer steps() and long periods for ambient motion.
 - Animation is CSS only: transform (or the individual `translate`/`rotate`/`scale` properties) and opacity. A static `filter` is fine. **Nothing may visibly jump at a loop point.**

@@ -2,7 +2,7 @@
 
 Animated background themes for T3 Code. The theme files in `themes/` are ready to install.
 
-T3 loads at most 196,608 bytes of theme files in total and silently skips the rest, so only some of these can be installed at once (the Ghibli themes are ~20 KB each, Nyx · Aurora Ocean ~49 KB).
+T3 loads at most about 1.9 MB of theme files in total and silently skips the rest (the cap was 196,608 bytes before the 2026-11-15 nightly), so every theme here can be installed at once (the Ghibli themes are ~22 KB each, Nyx · Aurora Ocean ~49 KB).
 
 ## Nyx
 
@@ -28,7 +28,7 @@ Personal fan-art themes: each one sets T3 Code's chat background to an animated 
 
 - `themes/`: the installed theme files (`ghibli-<film>.json`), ready to drop into `~/.t3/userdata/themes/`.
 - `scenes/`: the scene source, one Python file per film.
-- `build_scene.py <slug> [times...]`: builds a scene, renders preview frames to `out/<slug>/`, writes `theme.json`, and checks the 20,000-character limit and T3's url() rule.
+- `build_scene.py <slug> [times...]`: builds a scene, renders preview frames to `out/<slug>/`, writes `theme.json`, and checks the 50,000-character limit and T3's url() rule.
 - `install.py <slug>`: writes a built theme into T3's theme folder. `verify.py <slug>` checks the installed copy matches the build.
 - `lib.py`: shared pixel-art helpers. `BRIEF.md`: the rules every scene follows.
 

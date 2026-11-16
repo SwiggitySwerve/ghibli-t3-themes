@@ -115,7 +115,7 @@ def svg_escape(s):
             .replace("</style", "%3C/style").replace("\n", ""))
 
 
-THEME_CSS_LIMIT = 20000  # T3 Code's cap on a theme's `css` field
+THEME_CSS_LIMIT = 50000  # T3 Code's cap on a theme's `css` field (raised from 20,000 in the 2026-11-15 nightly)
 
 
 def theme_css(svg, theme):

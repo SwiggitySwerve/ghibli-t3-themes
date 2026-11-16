@@ -226,7 +226,8 @@ RIGHT = [(224, 128, 11), (208, 133, 9), (322, 102, 14), (268, 102, 12), (294, 10
 SEA = [(40, 156, 12), (62, 153, 9), (84, 157, 13), (108, 153, 10), (128, 156, 13), (150, 152, 8), (166, 157, 13),
        (188, 154, 9), (204, 157, 12), (226, 155, 11), (240, 158, 10)]
 RUIN = {"o": ST[0], "a": ST[1], "b": ST[2], "d": ST[3], "g": GR[2], "G": GR[1], "m": GR[3],
-        "n": WD[0], "e": C[0], "R": RB[1], "D": RB[3], "k": RB[4], "p": PINK}
+        "n": WD[0], "e": C[0], "R": RB[1], "D": RB[3], "k": RB[4], "p": PINK,
+        "L": RB[0], "c": RB[2], "t": "#e2c27c", "T": "#b89658"}
 COLUMN = [                  # a broken column with a nest and two eggs on top
     "..ee......",
     ".nnnnnn...",
@@ -249,14 +250,17 @@ BLOCK = [
     "oooaabdd",
     "oooaabdd",
 ]
-FALLEN = [                  # a robot long dead, sunk into the grass, with a flower laid on it
-    ".....p.........",
-    "....gGGGg......",
-    "..gGGmRRRRD....",
-    ".gGRRRRRRRDD...",
-    ".GRkkRRRkRRD.gG",
-    "gGRkkRRRRRRDgGm",
-    "GgRRRRRRRRDDGgm",
+FALLEN = [                  # a robot long dead: its bullet head on its side, dome to the left, the visor turned up to
+                            # the sky round an empty socket, a shoulder ball behind, moss over both, a flower laid on it
+    "......p...........",
+    "....gGGGg.........",
+    "..LLgttttTk.......",
+    ".LRttkkkktDk.gGgm.",
+    "LRRtTkDDktDk.RRRDD",
+    "LRRtTkkkktDkcRRRDD",
+    "gRRRttttTDDkcRRDDm",
+    "GgRRRRRRRDDgGgRDgm",
+    "GgGgGGgggmmGgGgGgm",
 ]
 
 
@@ -287,7 +291,7 @@ def middle():
         cv.paint([".w.", "wyw", ".w."], {"w": C[0], "y": GOLD}, x, knoll(x) + d)
     cv.paint(COLUMN, RUIN, 15, knoll(20) - 13)
     cv.paint(BLOCK, RUIN, 4, knoll(8) - 3)
-    cv.paint(FALLEN, RUIN, 212, knoll(219) - 6)
+    cv.paint(FALLEN, RUIN, 211, knoll(219) - 7)
     return cv
 
 
@@ -487,10 +491,10 @@ SHEETA = [
     ".....ss....ss..",
     ".....nn....nnn.",
 ]
-PAZU = [                    # his near arm is a sprite, so it can hang or lift the trumpet
+PAZU = [                    # his near arm is a sprite, so it can hang or lift the trumpet. Aviator goggles on his cap
     "....tttttt.....",
     "...tttttttttt..",
-    "..ttttttttttt..",
+    "..tthhkGgkGgk..",
     "..TTTTTTTTTTttt",
     "..hhhssssssss..",
     "..hhsssessess..",
@@ -520,8 +524,8 @@ PAZU = [                    # his near arm is a sprite, so it can hang or lift t
 KPAL = {"k": INK, "K": "#4a4468", "s": SK[0], "d": SK[1], "e": INK, "p": "#e8708c", "P": "#b84c70",
         "y": "#e8b450", "Y": "#b88438", "n": WD[1], "r": "#d83848", "c": "#7fe8ff",
         "t": "#c9955a", "T": WD[0], "h": WD[1], "w": C[0], "v": "#a8552e", "b": WD[1],
-        "u": "#4f7f78", "U": "#35605e"}
-SX, PX = 50, 32
+        "u": "#4f7f78", "U": "#35605e", "g": "#5f9fb0", "G": "#9cd0dc"}
+SX, PX = 52, 36                      # Pazu close beside Sheeta, so narrow panes keep both (see THEME position)
 KY = GY - 28
 CX, CY = SX + 8, KY + 14             # Sheeta's crystal
 
@@ -605,8 +609,8 @@ BPAL = {"w": "#ffffff", "k": "#3c4a78"}
 
 def moth():
     cv = art(MOTH, MPAL)
-    for x in (13, 30):      # two engines on outriggers, their propellers a pale blur seen edge-on
-        cv.rect(x, 9, 1, 10, "#e4eefa")
+    for x in (13, 30):      # two engines on outriggers, their propellers a pale blur seen edge-on across the keel
+        cv.rect(x, 11, 1, 6, "#e4eefa")
         cv.rect(x + 1, 13, 5, 2, WD[1])
     return cv
 
@@ -614,11 +618,11 @@ def moth():
 def flock(pts):
     """Birds, wings up, placed point-symmetrically about the image centre. Turning the image half a turn
     about that centre gives the same flock with wings down, so one PNG is both frames of the flap. Each
-    bird carries a dark edge, so it reads over white cloud as well as over sky."""
+    bird is a white M over a dark body pixel: it reads over sky and the crown, where the gulls circle."""
     mx, my = max(abs(x) for x, y in pts), max(abs(y) for x, y in pts)
-    cv = Canvas(2 * mx + 5, 2 * my + 3)
+    cv = Canvas(2 * mx + 7, 2 * my + 3)
     for x, y in pts + [(-x, -y) for x, y in pts if (x, y) != (0, 0)]:
-        cv.paint(["w...w", "kwwwk", ".kkk."], BPAL, mx + x, my + y)
+        cv.paint([".ww.ww.", "w..w..w", "...k..."], BPAL, mx + x, my + y)
     return cv
 
 
@@ -665,6 +669,36 @@ def windows():
     return d.replace(" -", "-")
 
 
+def oval(cx, cy, rx, ry):
+    """A pixel ellipse as one stroked path of row runs (stroke width 1, on the half-pixel)."""
+    d, px, py = "", 0, 0
+    for dy in range(-ry, ry + 1):
+        hw = int(round(rx * math.sqrt(1 - (dy / (ry + .5)) ** 2)))
+        x, y = cx - hw, cy + dy
+        d += f"m{x - px} {y - py}h{2 * hw}" if d else f"M{x} {y}.5h{2 * hw}"
+        px, py = x + 2 * hw, y
+    return d.replace(" -", "-")
+
+
+def beam():
+    """The crystal's beam pointing to Laputa, rising 1 px every 7: solid out to the chat column, then dashed, stopping
+    short of the island. It is drawn with the lights (above the night wash), so it leaves out the pixels the robot
+    covers, which puts it behind him."""
+    d, px, py = "", 0, 0
+    for k in range(20):
+        y = CY - 2 - k
+        r = y - RY - 11
+        xs = [x for x in range(CX + 4 + 7 * k, CX + 11 + 7 * k) if (k < 8 or k % 2 == 0) and not
+              (0 <= r < len(BODY) and 0 <= x - RX < len(BODY[r]) and BODY[r][x - RX] != ".")]
+        for x in xs:
+            if x - 1 in xs:
+                continue
+            n = next(i for i in range(len(xs) + 1) if x + i not in xs)
+            d += f"m{x - px} {y - py}h{n}" if d else f"M{x} {y}.5h{n}"
+            px, py = x + n, y
+    return d.replace(" -", "-")
+
+
 NX, NY = IX + IW // 2, IY + 80       # the island's lowest point
 FX, FY = -34, 70                     # the leading flaptter, parked; they glide down over the robot's head
 TX = PX + 400                        # Pazu's trumpet pose is parked 400 px to the right of his arm
@@ -673,8 +707,9 @@ LAYERS = [
     # --- far, behind the cumulus: the Goliath (with searchlights after dark), lightning in the Dragon's Nest,
     #     a cloud streak
     ("goliath", "<g class='lp-go'>" + img(art(GOLIATH, OPAL), -90, 64)
-     + "<path class='lp-N' stroke='#ffd' d='M-62 76.5v5m-1 0v5m-1 0v5m-1 0v5m41-20v5m1 0v5m1 0v5m1 0v5'/></g>"),
-    ("lightning", "<path class='lp-bo' stroke='#fff' d='M64 47.5h2m-2 1h2m-3 1h2m-3 1h2m-3 1h4m-2 1h2m-3 1h2m-3 1h2m-2 1h1m-2 1h1"
+     + "<path class='lp-N' fill='#ffd' fill-opacity='.22' d='M-63 75h2l1 22h-7zm40 0h2l4 22h-7z'/></g>"),
+    ("lightning", f"<path class='lp-bo' stroke='#dde' stroke-opacity='.5' d='{oval(68, 51, 10, 4)}'/>"
+                  "<path class='lp-bo' stroke='#fff' d='M64 47.5h2m-2 1h2m-3 1h2m-3 1h2m-3 1h4m-2 1h2m-3 1h2m-3 1h2m-2 1h1m-2 1h1"
                   "m13-11h2m-3 1h2m-3 1h3m-2 1h1m-2 1h1'/>"),
     ("cloud_a", cloud([(5, 8, 3), (11, 7, 4), (18, 7, 5), (26, 6, 5), (34, 7, 6), (43, 6, 5), (51, 7, 5),
                        (58, 8, 4), (64, 9, 3)], C[:3], 4, -90, 66, " class='lp-a'")),
@@ -686,10 +721,11 @@ LAYERS = [
      + img(art([r[::-1] for r in SOLDIER], VPAL), VX, VY)
      + f"<path class='lp-s' fill='#b4a4e6' d='M{VX + 20} {VY + 10}h3v1h-3zm-15-5h3v1h-3z'/></g></g>"),
     # --- the island, adrift (lp-o sideways, lp-i up and down); its core answers Sheeta's crystal, and the
-    #     gulls wheeling round the crown go with it: two groups on one eight-point orbit, half a lap apart
+    #     gulls wheeling round the crown go with it: two groups on one eight-point orbit, half a lap apart.
+    #     They roost after dark (lp-R) and stay down until Pazu's doves have crossed at dawn
     ("island", "<g class='lp-o'><g class='lp-i'>" + img(island(), IX, IY)
-     + "<g class='lp-e'>" + img(flock([(0, 0), (9, -4)]), 243, 28, " class='lp-q'") + "</g>"
-     "<g class='lp-e' style='animation-delay:-9.5s'>" + img(flock([(6, -2)]), 256, 42, " class='lp-q'") + "</g></g></g>"),
+     + "<g class='lp-R'><g class='lp-e'>" + img(flock([(0, 0), (9, -4)]), 243, 28, " class='lp-q'") + "</g>"
+     "<g class='lp-e' style='animation-delay:-9.5s'>" + img(flock([(6, -2)]), 256, 42, " class='lp-q'") + "</g></g></g></g>"),
     # --- cloud lapping the island's lower left (Laputa is rising out of the cumulus), and a drifting puff
     ("wisp", cloud([(9, 16, 7), (21, 12, 9), (35, 15, 8), (47, 18, 6), (28, 19, 7)], C[:4], 7, 189, 98)),
     ("cloud_b", cloud([(9, 14, 7), (20, 10, 9), (33, 12, 8), (44, 15, 6), (27, 16, 8)], C[:4], 6, -90, 96,
@@ -715,8 +751,9 @@ LAYERS = [
     # --- Pazu's near arm, hanging; and, parked off-canvas until its turn, the same arm lifting his trumpet
     ("trumpet", f"<g class='lp-tp'><path fill='#fffaf0' d='M{PX + 2} {KY + 12}h2v3h-2zM{TX + 2} {KY + 9}h1v1h1v2h-2z'/>"
      f"<path fill='#f8cfa0' d='M{PX + 2} {KY + 15}h2v1h-2zM{TX + 1} {KY + 8}h2v1h-2z'/>"
-     f"<path fill='gold' d='M{TX - 5} {KY + 5}h1v1h1v1h10v1h-12z'/>"
-     f"<path fill='peru' d='M{TX - 5} {KY + 8}h2v1h-2zm5-2h1v1h-1zm2 0h1v1h-1z'/></g>"),
+     # the trumpet: a 3 px flared bell, a darker underside (broken by his hand) and a valve
+     f"<path fill='gold' d='M{TX - 6} {KY + 5}h1v1h1v1h11v1h-13z'/>"
+     f"<path fill='darkgoldenrod' d='M{TX - 6} {KY + 8}h7v1h-7zm9 0h3v1h-3zm-2-2h1v1h-1z'/></g>"),
     # --- the robot: its head nods to her, the fox-squirrel runs from shoulder to head
     ("robot", img(art(BODY, RPAL), RX, RY + 11) + "<g class='lp-h'>" + img(art(HEAD, RPAL), HXA, HYA)
      + "</g>" + img(art(FOX, XPAL), RX + 43, RY + 8, " class='lp-u'")),
@@ -731,8 +768,18 @@ LAYERS = [
     #     Always: the island's core and Sheeta's crystal, the robot's eyes (so by night they glow)
     ("lights", "<g class='lp-N'><path stroke='#fff' d='M46 13.5h1m56 45h1m14-13h1m19-26h1m23 21h1m18-14h1m-45 31h1m34 23h1"
                "m17-22h1m23-46h1m45 4h1m36-8h1'/>"
-               "<path fill='#ffe' d='M101 29h5v1h2v1h1v2h1v5h-1v2h-1v1h-2v1h-5v-1h-2v-1h-1v-2h-1v-5h1v-2h1v-1h2z'/></g>"
-               f"<g class='lp-o'><g class='lp-i'><path class='lp-N' stroke='#fc6' stroke-width='2' d='{windows()}'/>"
+               "<path fill='#ffe' d='M101 29h5v1h2v1h1v2h1v5h-1v2h-1v1h-2v1h-5v-1h-2v-1h-1v-2h-1v-5h1v-2h1v-1h2z'/>"
+               # the moon's craters and its shaded lower limb
+               "<path stroke='#dda' d='M102 33.5h2m1 3h1m-6 2h2M109.5 33v5m-1 0v2M106 40.5h2m-7 1h5'/>"
+               # volucite in the ruin's stones, waking when the crystal glows by night (Uncle Pom's mine)
+               "<path class='lp-z' stroke='#8ef' d='M20 144.5h1m1 4h1m-5 2h1m-10 1h1'/>"
+               # the crystal's beam pointing the way to Laputa: once a cycle, faint (see beam())
+               f"<path class='lp-v' stroke='#aff' stroke-opacity='.35' d='{beam()}'/></g>"
+               # a soft glow where the roots cradle the great crystal under the island: a static shape, lit with the
+               # night (by day the cumulus rises over the dome's tip and it would tint the cloud)
+               f"<g class='lp-o'><g class='lp-i'><g class='lp-N'><path stroke='#7df' stroke-opacity='.25' d='{oval(NX, NY - 5, 13, 3)}'/>"
+               f"<path stroke='#7df' stroke-opacity='.3' d='{oval(NX, NY - 4, 7, 2)}'/></g>"
+               f"<path class='lp-N' stroke='#fc6' stroke-width='2' d='{windows()}'/>"
                f"<path class='lp-N' stroke='#aff' d='M{NX - 2} {NY}.5h4'/>"
                f"<path class='lp-z' stroke='#aff' d='M{NX - 3} {NY}.5h6m-4 1h2m-2 1h2M{NX - 6} {NY - 2}.5h1m10 0h1'/></g></g>"
                f"<g class='lp-h'><path class='lp-g' fill='#f84' d='M{HXA + 6} {HYA + 6}h1v1h-1zm-4 1h1v1h-1z'/></g>"),
@@ -769,11 +816,13 @@ CSS = (
     ".lp-B{mix-blend-mode:multiply}"
     ".lp-N{opacity:0;animation:lp-N 240s steps(8) infinite}@keyframes lp-N{25%{opacity:0}32%,71%{opacity:1}78%{opacity:0}}"
     ".lp-W{opacity:0;animation:lp-W 120s steps(5) infinite}@keyframes lp-W{42%{opacity:0}52%{opacity:.7}62%{opacity:0}}"
+    # the gulls roost with nightfall and come back once Pazu's doves have crossed (202 s)
+    ".lp-R{animation:lp-R 240s steps(8) infinite}@keyframes lp-R{25%,87%{opacity:1}32%,84%{opacity:0}}"
     # moments on that cycle, each parked and unchanging outside its slot (--d = when it starts):
     #   day    10 flaptters . 33 crystal and core
     #   dusk   46 the soldier robot flies home, left to right (on screen from 56, gone behind Laputa by 64)
-    #   night  74 Goliath, searchlights on . 93 and 153 crystal and core . 104 lightning
-    #   dawn   182 Pazu's trumpet . 184 pigeons
+    #   night  74 Goliath, searchlights on . 93 and 153 crystal, core and ruin stones (93 also the beam) . 104 lightning
+    #   dawn   182 Pazu's trumpet . 184 pigeons (the gulls stay roosted until 202)
     #   day    190 Tiger Moth . 213 crystal and core . 224 lightning
     ".lp-mx{animation:lp-x 240s var(--d) steps(200) infinite}.lp-mw{animation:lp-x 240s var(--d) steps(400) infinite}.lp-my{animation:lp-y 240s var(--d) steps(40) infinite}"
     ".lp-pf{animation:lp-r 240s var(--d) steps(40) infinite}"
@@ -782,6 +831,8 @@ CSS = (
     ".lp-pf,.lp-q{transform-box:fill-box;transform-origin:center}"
     ".lp-tp{animation:lp-tp 240s 176s steps(1) infinite}@keyframes lp-tp{2.5%{transform:translateX(-400px)}7.5%{transform:none}}"
     ".lp-z{opacity:0;animation:lp-z 60s 30s steps(4) infinite}@keyframes lp-z{5%,14%{opacity:1}19%{opacity:0}}"
+    # the crystal's beam: lp-z's 93 s glow (the first after dusk) stretched over the 240 s cycle
+    ".lp-v{opacity:0;animation:lp-v 240s 90s steps(4) infinite}@keyframes lp-v{1.25%,3.5%{opacity:1}4.75%{opacity:0}}"
     ".lp-bo{opacity:0;animation:lp-bo 120s 104s steps(1) infinite}"
     "@keyframes lp-bo{.3%{opacity:1}.5%{opacity:0}.9%{opacity:1}1.4%{opacity:0}}"
     # the Tiger Moth's flyby: 30 s gliding in over the right third, 12 s across the middle,
@@ -791,7 +842,9 @@ CSS = (
     ".lp-go{animation:lp-go 240s 74s steps(210) infinite}@keyframes lp-go{50%,to{transform:translateX(420px)}}"
 )
 THEME = {
-    "position": "center 75%",   # wide panes crop vertically: keep the crown in view (see wide.png)
+    "position": "35% 75%",      # wide panes crop vertically: keep the crown in view (see wide.png); narrow ones
+                                # crop sideways, and 35% keeps Pazu and his trumpet's bell in an app-sized pane, at the cost
+                                # of the island's shaded edge
     "canvas": "#0e1a38", "accent": "#7fe0ff", "overlay": "#0c1a3a",
     "colors": {"sidebar": "#0c1733", "sidebarRowSelected": "#1c3160", "sidebarBorder": "#1b2c52",
                "surface": "#132348", "border": "#22386a", "text": "#eef4ff", "textMuted": "#a6b8d8"},

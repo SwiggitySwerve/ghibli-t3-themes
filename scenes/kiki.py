@@ -209,8 +209,7 @@ def tower(cv, cx):
         cv.rect(ax, 60, 3, 6, WIN)
         cv.set(ax, 60, STONE)
         cv.set(ax + 2, 60, STONE_SH if ax > cx else STONE)
-    cv.rect(cx - 1, 62, 1, 2, GOLD)
-    cv.rect(cx - 11, 56, 22, 1, STONE_DK)
+    cv.rect(cx - 11, 56, 22, 1, STONE_DK)                   # (the bell is a sprite: it swings as Kiki passes)
     for sx in (cx - 13, cx + 11):                            # corner pinnacles
         cv.rect(sx, 62, 2, 4, STONE if sx < cx else STONE_SH)
         cv.rect(sx, 60, 2, 2, mid if sx < cx else lo)
@@ -345,8 +344,11 @@ def land(cv):
     for n, h in [(7, 5), (9, 6), (10, 5), (9, 4), (8, 3), (9, 2), (8, 1)]:
         cv.rect(x, HZ - h, n, h, FAR2)
         x += n
-    cv.rect(57, HZ - 12, 2, 7, C0)                           # lighthouse
-    cv.rect(57, HZ - 13, 2, 1, RED)
+    # lighthouse: red cap, lantern (lit by a sprite), dark gallery, a white tower with a red band that
+    # widens at its foot, and the keeper's cottage beside it
+    cv.paint([".rr.", ".gg.", "gggg", ".wS.", ".wS.", ".rr.", ".wS.", "wwwS", "wwwS", "wwwS"],
+             {"r": RED, "g": WINF, "w": C0, "S": C1}, 56, HZ - 15)
+    cv.paint(["oooo", "wwwS", "wwwS"], {"o": ROOFS["r"][1], "w": C0, "S": C1}, 60, HZ - 8)
     bands(cv, HZ, [(114, SEA[0]), (120, SEA[1]), (130, SEA[2]), (143, SEA[3]), (158, SEA[4]), (H, SEA[5])],
           soft=False)
     for x in range(226, W):                                  # hazy far hill
@@ -407,6 +409,19 @@ def town(cv):
             # the old janitor in the belfry gallery, pushing his deck brush (the brush is a sprite)
             cv.paint(JANITOR, {"W": C0, "s": SKIN, "j": SEA[1], "e": DARK}, JX, 66 - len(JANITOR))
             church(cv, 258, tier_base(262, .78))
+    # The plain gable behind the crows (243-253), which Tombo rides past: shutters and flower boxes on its
+    # upper pair, its lower pair dropped (it sat behind his head), a shaded plinth, and the hill seam at
+    # 242 closed by widening its neighbour.
+    lit, sh = WALLS["y"]
+    cv.rect(245, QUAY - 12, 6, 3, lit)
+    for x in (244, 251):
+        cv.rect(x, QUAY - 18, 1, 3, TEAL)
+    cv.rect(245, QUAY - 15, 2, 1, RED)
+    cv.rect(249, QUAY - 15, 2, 1, GOLD)
+    cv.rect(243, QUAY - 7, 9, 7, sh)
+    for y in range(QUAY - 22, QUAY):
+        if cv.get(242, y) == hx(G2):
+            cv.set(242, y, ROOFS["t"][1] if y < QUAY - 19 else WALLS["c"][1])
 
 
 def front(cv):
@@ -416,8 +431,12 @@ def front(cv):
             cv.set(x, y, SEA[5] if y < QUAY + 10 and (x + y) % 2 else cv.get(x % 60, y))
     cv.rect(62, QUAY, W - 62, 2, STONE)                      # quay and pier
     cv.rect(62, QUAY + 2, W - 62, 5, STONE_SH)
-    for x in range(64, W, 6):
-        cv.rect(x, QUAY + 3, 1, 3, STONE_DK)
+    # dressed stone: two courses with staggered joints in a soft mortar tone (not a ruler of dark ticks)
+    mortar = mix(STONE_SH, STONE_DK, .45)
+    cv.rect(62, QUAY + 4, W - 62, 1, mortar)
+    for x in range(64, W, 12):
+        cv.rect(x, QUAY + 2, 1, 2, mortar)
+        cv.rect(x + 6, QUAY + 5, 1, 2, mortar)
     cv.rect(62, QUAY + 7, W - 62, 1, DARK)
     cv.rect(63, QUAY - 7, 3, 7, C0)                          # pier beacon
     cv.rect(63, QUAY - 5, 3, 2, RED)
@@ -426,6 +445,9 @@ def front(cv):
         cv.rect(x, QUAY - 10, 1, 10, DARK)
         cv.rect(x - 1, QUAY - 12, 3, 2, DARK)
         cv.set(x, QUAY - 11, GOLD)
+    # washing strung below the upper windows of the pink house right of the painter
+    cv.paint(["kkkkkkkkkk", ".wwS.rr.b.", ".wwS.rr.b.", ".wwS....b."],
+             {"k": STONE_DK, "w": C0, "S": C1, "r": RED, "b": SEA[2]}, 285, QUAY - 15)
     # (the bollards on the quay edge are a sprite: Tombo rides behind them)
     # The bakers stand on the pier just left of the pretzel sign (x 72-89, sea and hillside behind them);
     # they and the pecking crow are on the house-front line (feet on row 145), behind Tombo's lane.
@@ -623,10 +645,10 @@ def painter():
 
 
 def tower_top():
-    """The spire and roof of the clock tower, alone, for the airship to pass behind."""
+    """The spire and roof of the clock tower, alone, for the airship and its mooring line to pass behind."""
     cv = Canvas(W, H)
     tower(cv, TX)
-    return patch(cv, TX - 13, 33, TX + 14, AY + 27)
+    return patch(cv, TX - 13, 33, TX + 14, AY + 31)   # down to the eaves, below the mooring line
 
 
 # Kiki: r/R bow, shoes, radio; h/H hair; s/S skin; e eye; k/K/d dress; o/O satchel; c/C Jiji; w white;
@@ -689,6 +711,9 @@ ARMD = part(r19="43:Kkk", r20="44:Kkk", r21="45:Kkk", r22="46:Kkk", r23="48:ss",
 WAVE = (part(r17="43:Kkkk", r16="45:Kkk", r15="46:Kkk", r14="47:Kkk", r13="49:ss", r12="49:ss"),
         part(r17="43:Kkkkk", r16="46:Kkk", r15="48:Kkk", r14="51:ss", r13="51:ss"))
 CATEYE = part(r13="14:ww 18:ww", r14="14:w 18:w")
+# Jiji glancing back along the broom: his eyes slide a pixel to the tail end (black paints out where they
+# were) and the near ear tilts out
+GLANCE = part(r11="13:c", r13="13:ww 15:c 17:ww 19:c", r14="13:wc 17:wc")
 # Kiki's sprite sits at her left-hand, high station; her flight path (CSS) offsets it by up to 180px
 # right and 40px down. High, her feet clear the clock face; low, she is just above the bay.
 KX, KY = 44, 27
@@ -737,7 +762,7 @@ LX, LY = 100 + LILY[0], QUAY - 29 + LILY[1]
 LTAIL = art(["", "", "", "", "", "6:ww"], 9), art(["", "", "", "7:w", "7:w", "6:w"], 9)
 # the bakery's hanging sign: a pretzel (g gold, b its baked-brown underside)
 PRETZEL = art(["3:B", "1:gg 4:gg", "0:g 3:g 6:g", "0:g 2:g 4:g 6:g", "1:b 5:b", "2:bbb"], 7)
-PUFF = "h3v1h1v2h-1v1h-3v-1h-1v-2h1z"
+PUFF = "h2v1h1v1h-1v1h-2v-1h-1v-1h1z"   # a 4x3 puff, rounded
 WISP = art(["10:wwwwww", "7:wwwwwwwwwwww 22:www", "4:wwwwwwwwwwwwwwwwwwwwwwwww", "2:wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
             "0:wwwwwwww 8:sssssssssssssssssssssssssss", "3:sssssssssssssssssssssssssss", "8:ssssssssssssss"], 36)
 CX, CY = CLOCK[0] + .5, CLOCK[1] + .5
@@ -754,12 +779,14 @@ def dashes(pts):
 
 # Sea glints: three groups twinkling out of step. Every dash is on open water at least 2px clear of the
 # boats' bob envelopes (sailboat x 8-28 y 122-141, tug x 40-58 y 135-146), the pier and the shore.
-GLINTS = [("3.4s", "", [(12, 117, 4), (37, 118, 3), (66, 128, 4), (32, 135, 5), (3, 147, 6), (116, 159, 8)]),
-          ("4.6s", "-1s", [(3, 119, 3), (48, 118, 4), (28, 148, 7), (213, 160, 8)]),
-          ("5.8s", "-3s", [(56, 117, 4), (64, 123, 4), (2, 151, 6), (36, 152, 5), (131, 159, 8)])]
+# (Two groups, not three: the third's dashes were shared out to pay for the new sprites.)
+GLINTS = [("3.4s", "", [(12, 117, 4), (37, 118, 3), (66, 128, 4), (32, 135, 5), (3, 147, 6), (28, 148, 7), (116, 159, 8),
+                        (213, 160, 8)]),
+          ("5.8s", "-3s", [(3, 119, 3), (56, 117, 4), (48, 118, 4), (64, 123, 4), (2, 151, 6), (36, 152, 5), (131, 159, 8)])]
 # Sun sparkle: two sets of dots in rows 115-118, below the steamer's lane and above the dinghy's
-SPARKLE = ([(20, 115, 2), (27, 115, 1), (34, 116, 2), (25, 117, 1), (32, 118, 2), (21, 118, 1)],
-           [(24, 116, 1), (31, 115, 1), (22, 117, 2), (34, 117, 1), (28, 118, 1), (36, 115, 1)])
+# (four short dashes per set rather than six dots: the dots read as a field of specks)
+SPARKLE = ([(20, 115, 3), (31, 116, 2), (25, 117, 3), (33, 118, 2)],
+           [(26, 115, 2), (21, 116, 2), (30, 117, 2), (24, 118, 3)])
 # The steamer crawling along the horizon, bow to the right: s smoke, r funnel, w cabin, d hull. It ends
 # its run hidden behind the tree and chimney at x 100-108, which are redrawn over it (STEAM_END).
 STEAMER = art(["0:sss", "3:r", "2:wwww", "0:ddddddd"], 7)
@@ -773,12 +800,22 @@ DX, DY = 50, 122    # where it turns round
 SKYTOMBO = art(["4:hhh", "4:hhsg", "3:wwwws", "3:rrrr 8:s", "2:D 3:wwww 10:D", "1:DDD 5:bb 9:DDD", "0:D 4:D 6:s 8:D 12:D",
                 "0:D 4:DDDDD 12:D", "0:D 4:D 8:D 12:D", "1:DDD 9:DDD"], 13)
 SX, SY = -16, 36
+# The pacifier mother (Kiki's first delivery) pushing her pram out of the bakery door and along the quay
+# to her own door (the teal house, 233-235), facing right: h hair, s skin, c coat, l stockings, e shoes, H pram hood, P pram body, w trim, D frame
+MPAL = {"h": "#553322", "s": "#f3c7a9", "c": "#7d6aa8", "l": "#ddccbb", "e": "#221111", "H": "#33456b",
+        "P": "#4a5f8a", "w": "#ffffff", "D": "#222233"}
+MOTHER = ["..hh...........", ".hhhh..........", ".hsss..........", ".hss...........", "..s............",
+          ".cccc.D..HHH...", "cccccsDHHHHH...", ".cccc..HHHHPPPP", ".cccc..PPPPPPPP", ".cccc..wwwwwwww",
+          "cccccc..PPPPPP.", "...l.....D...D.", "...e....DDD.DDD"]
+MX = 121           # in front of the bakery door
 
 k = lambda a: runs(a, PAL, KX, KY)
 gull = lambda i, x, y, d: (f"<g id='kk-u'>{runs(GULL[0], GPAL, 0, 0)}"
                            f"{flip(runs(GULL[1], GPAL, 0, 0), runs(GULL[2], GPAL, 0, 0), '.5s')}</g>" if i == 0 else
                            f"<use href='#kk-u' x='{x}' y='{y}' style='--d:{d}s'/>")
-prop = lambda x, y: flip(f"<path d='M{x}.5 {y}v7'/>", f"<path d='M{x}.5 {y + 3}v1'/>", ".24s")   # spinning propeller
+# spinning propeller: the hub is static and the blade blinks over it (the same two frames as a flip, one
+# animated element instead of two)
+prop = lambda x, y: f"<path d='M{x}.5 {y + 3}v1'/><path class='kk-f' style='--t:.24s' d='M{x}.5 {y}v7'/>"
 # Depth order, back to front. Water-surface effects come first so that everything else draws over them.
 # Times in the comments are loop times; the 120 s rules all start 20 s in (PH) so that the scene opens
 # with Kiki mid-screen rather than low on the left.
@@ -797,17 +834,21 @@ SPRITES = (
     # clock hands: they start at ten past ten and then run at true speed, one tick a minute
     + f"<g stroke='#124'><path class='kk-c' d='M{CX} {CY}v-5'/>"
     f"<path class='kk-c' style='--t:43200s;--d:-36600s' d='M{CX} {CY}v-3'/></g>"
-    # the janitor's deck brush
-    + flip(runs(BRUSH[0], {"x": "#553322"}, JX + 5, 61), runs(BRUSH[1], {"x": "#553322"}, JX + 5, 61), "2.6s")
-    # lighthouse and pier beacon
-    + "<path class='kk-f' style='--t:6s' stroke='#ffa' d='M57 99.5h2'/>"
-      f"<path class='kk-f' style='--t:2.4s' stroke='#ff8' d='M63 {QUAY - 8}.5h3'/>"
+    # the belfry bell, swinging while Kiki passes over the tower (kk-i)
+    + f"<path class='kk-i' stroke='{GOLD}' d='M{TX - 1}.5 62v2'/>"
+    # the janitor's deck brush, pushed to and fro a pixel (one element, kk-r)
+    + f"<g class='kk-r' style='--t:1.3s'>{runs(BRUSH[0], {'x': '#553322'}, JX + 6, 61)}</g>"
+    # lighthouse and pier beacon, one path blinking together
+    + f"<path class='kk-f' style='--t:4s' stroke='#ff8' d='M57 98.5h2M63 {QUAY - 8}.5h3'/>"
     # the dirigible crosses left to right, 80-150 s, behind the clock tower: its spire and roof are redrawn
     # over it
-    + f"<g class='kk-t' style='--x:720px;--t:120s;--n:720;--d:-60s'>{img(airship(), APAL, AX, AY)}</g>"
+    + f"<g class='kk-t' style='--x:720px;--t:120s;--n:720;--d:-60s'>{img(airship(), APAL, AX, AY)}"
+      # its mooring line trailing from under the nose
+      f"<path stroke='#55607a' d='M{AX + 86}.5 {AY + 17}v2m-1 0v2m-1 0v2m-1 0v2m-1 0v1m-1 0v2m-1 0v1m-1 0v1m-1 0v1'/></g>"
     + tower_top()
-    # gulls: a flock crossing right to left high up, 0-42 s
-    + "<g transform='matrix(-1 0 0 1 320 0)'><g class='kk-t' style='--x:1100px;--y:16px;--t:120s;--n:1100;--d:-20s'>"
+    # gulls: a flock crossing right to left high up, 33-74 s, after the dirigible has gone (it used to fly
+    # through its envelope)
+    + "<g transform='matrix(-1 0 0 1 320 0)'><g class='kk-t' style='--x:1100px;--y:16px;--t:120s;--n:1100;--d:-110s'>"
       "<g transform='translate(-40 12)'>"
     + "".join(gull(i, x, y, d) for i, (x, y, d) in enumerate([(0, 0, 0), (-16, 6, -.2), (-9, 13, -.35), (-31, 9, -.1)]))
     + "</g></g>"
@@ -816,14 +857,20 @@ SPRITES = (
       f"<g class='kk-t' style='--x:1130px;--t:120s;--n:1130;--d:-65.6s'>{img(SKYTOMBO, TPAL, SX, SY)}"
       f"<g stroke='#99a'>{prop(SX + 13, SY + 3)}</g></g></g>"
     # the dinghy tacking across the bay, behind the moored boats: in 60-108 s, about at 113 s, out again
-    + f"<g class='kk-j' style='--p:-80s'><g class='kk-v'>{runs(DINGHY, {'w': '#ffffff', 'D': '#222233', 'r': '#dd2233'}, DX, DY)}</g></g>"
+    # Its wake trails off the stern, the outer dash coming and going. kk-v mirrors about the group's box, so
+    # an unstroked point as far right of the hull's centre (54.5) as the wake reaches left keeps that centre.
+    + f"<g class='kk-j' style='--p:-80s'><g class='kk-v'>{runs(DINGHY, {'w': '#ffffff', 'D': '#222233', 'r': '#dd2233'}, DX, DY)}"
+      f"<path stroke='#def' d='M{DX - 4} {DY + 8}.5h3'/><path class='kk-f' style='--t:1.3s' stroke='#def' d='M{DX - 8} {DY + 9}.5h3'/>"
+      f"<path d='M{DX + 16} {DY + 9}h1'/></g></g>"
     # moored boats, bobbing out of step
     + f"<g class='kk-b'>{img(SAIL, BPAL, 8, 122)}</g><g class='kk-b' style='--d:-1.3s'>{img(TUG, BPAL, 40, 135)}</g>"
-    # chimney smoke over the bakery: grey enough to show against the white cumulus
-    + f"<defs><path id='kk-e' fill='#99a' d='M105 99{PUFF}'/></defs><use href='#kk-e' class='kk-p'/>"
-    + "".join(f"<use href='#kk-e' class='kk-p' style='--d:{d}s'/>" for d in (-2.5, -5))
+    # chimney smoke over the bakery: two pale wisps that leave the chimney mouth small and swell as they fade
+    + "".join(f"<path class='kk-p'{d and f' style={chr(39)}--d:{d}{chr(39)}'} fill='#b4bfd3' d='M106 100{PUFF}'/>"
+              for d in ("", "-3.75s"))
     # Lily's tail
     + flip(runs(LTAIL[0], {"w": "#ffffff"}, LX, LY), runs(LTAIL[1], {"w": "#ffffff"}, LX, LY), "3.1s")
+    # a glint sweeping across the right pane of the bakery's shop window now and then (kk-L)
+    + "<path class='kk-L' stroke='#fff' d='M112 141.5h1m0-1h1m0-1h1m0 3h1m0-1h1m0-1h1'/>"
     # the pretzel sign, swaying on its bracket
     + f"<g class='kk-r'>{runs(PRETZEL, {'g': '#ffcc44', 'b': '#bb7733', 'B': '#112244'}, 92, QUAY - 16)}</g>"
     # the baker lifting a loaf to his chest and lowering it
@@ -834,6 +881,10 @@ SPRITES = (
     + flip(f"<path d='M{CROWX} {QUAY - 4}.5h2'/>", f"<path d='M{CROWX - 1} {QUAY - 2}.5h2'/>", "1.7s")
     + f"<g class='kk-n'><path d='M{HOPX} {QUAY - 4}.5h2m-1 1h3m-3 1h4m-3 1h1'/>"
       f"<path class='kk-z' style='animation-duration:11s;animation-delay:0s' d='M{HOPX - 2} {QUAY - 5}.5h3m2 0h3'/></g></g>"
+    # the pacifier mother: out of the bakery door at 108 s, along the quay and in at her own door at 8.8 s
+    # (kk-M), her trailing leg stepping (kk-f)
+    + f"<g class='kk-M'>{img(MOTHER, MPAL, MX, QUAY - 13)}<g class='kk-f' style='--t:.5s'>"
+      f"<path stroke='#dcb' d='M{MX + 1}.5 {QUAY - 2}v1'/><path stroke='#211' d='M{MX + 1}.5 {QUAY - 1}v1'/></g></g>"
     # Tombo on the quay: rides in from 35 s, stops and turns 52-54 s, and on the way out the propeller
     # lifts him off at 56 s; he climbs away and is gone by 70 s (kk-h; his shadow stays on the quay)
     + f"<g class='kk-q'><path stroke='#ba8' d='M{TX0 + 3} {QUAY}.5h14'/><g class='kk-h'><g class='kk-v'>{img(TOMBO, TPAL, TX0, TY0)}"
@@ -843,18 +894,22 @@ SPRITES = (
     + f"<path stroke='#124' stroke-width='3' stroke-dasharray='2 30' d='M134 {QUAY}.5h188'/>"
     + f"<path stroke='#223' d='M260 {QUAY - 5}.5h2m-1 1h3m-3 1h4m-3 1h1'/>"
     + painter()
-    # Osono's bare forearm waving and Ursula's brush arm dabbing at the canvas: one skin path for both,
-    # plus her brush. The dab lifts the brush tip three rows up the canvas edge.
+    # Ursula's brush arm dabbing at the canvas, plus her brush: the dab lifts the brush tip three rows up the
+    # canvas edge.
     + f"<g stroke='{SKIN}'>"
-    + flip(f"<path d='M{OX}.5 {QUAY - 10}v2M{UX + 5} {PY - 9}.5h3'/><path stroke='#732' d='M{UX + 8} {PY - 9}.5h2'/>",
-           f"<path d='M{OX - 1}.5 {QUAY - 11}v2m1 0v1M{UX + 5} {PY - 9}.5h1m0-1h1m0-1h1'/>"
-           f"<path stroke='#732' d='M{UX + 8} {PY - 12}.5h2'/>", "1.2s") + "</g>"
+    + flip(f"<path d='M{UX + 5} {PY - 9}.5h3'/><path stroke='#732' d='M{UX + 8} {PY - 9}.5h2'/>",
+           f"<path d='M{UX + 5} {PY - 9}.5h1m0-1h1m0-1h1'/><path stroke='#732' d='M{UX + 8} {PY - 12}.5h2'/>", "1.2s")
+    # Osono waves only while Kiki is low and near, 0-20 and 100-120 s (kk-W): a pink sleeve out from her
+    # shoulder, then the forearm and a hand two pixels clear of her hair, the hand rocking a pixel (kk-r)
+    + f"<g class='kk-W'><path stroke='{PINK}' d='M{OX - 1} {QUAY - 9}.5h2'/><path d='M{OX - 2}.5 {QUAY - 10}v1'/>"
+      f"<path class='kk-r' style='--t:.6s' d='M{OX - 2}.5 {QUAY - 11}v1'/></g></g>"
     # Kiki: flight path across (kk-x) and up and down (kk-w), mirrored when she flies left (kk-m), bob (kk-y)
     + "<g class='kk-x'><g class='kk-w'><g class='kk-m'><g class='kk-y'>"
     + img(KIKI, PAL, KX, KY)
     + flip(k(BOW[0]), k(BOW[1]), ".5s") + flip(k(HAIR[0]), k(HAIR[1]), ".7s") + flip(k(HEM[0]), k(HEM[1]))
     + flip(k(TAIL[0]), k(TAIL[1]), "2.6s") + flip(k(STRAW[0]), k(STRAW[1]), ".4s")
     + f"<g class='kk-k'>{k(EYE)}</g><g class='kk-k' style='--t:3.7s'>{k(CATEYE)}</g>"
+    + f"<g class='kk-l'>{k(GLANCE)}</g>"
     + f"<g class='kk-a'>{k(ARMD)}</g><g class='kk-z'>{flip(k(WAVE[0]), k(WAVE[1]), '.8s')}</g>"
     + f"<g class='kk-r'>{runs(RADIO, PAL, KX + 55, KY + 27)}</g>"
     + "</g></g></g></g>"
@@ -880,8 +935,27 @@ CSS = (
     f".kk-a,.kk-z{{animation:kk-a 120s {PH} steps(1) infinite}}.kk-z{{opacity:0;animation-name:kk-z}}"
     "@keyframes kk-a{42%{opacity:0}47%{opacity:1}}@keyframes kk-z{42%{opacity:1}47%{opacity:0}}"
     ".kk-k{animation:kk-k var(--t,5.3s) steps(1) infinite}@keyframes kk-k{96%{opacity:0}}"
-    ".kk-r{animation:kk-r 1.4s steps(2) infinite alternate}@keyframes kk-r{from{translate:-1px}to{translate:1px}}"
-    ".kk-p{opacity:0;animation:kk-p 7.5s var(--d,0s) steps(25) infinite}@keyframes kk-p{12%{opacity:.8}to{translate:-16px -28px}}"
+    # a two-position rock, a pixel to the left and back, each held for --t (pretzel sign, radio, brush, Osono's hand)
+    ".kk-r{animation:kk-r var(--t,1.4s) steps(2) infinite alternate}@keyframes kk-r{from{translate:-1px}to{translate:1px}}"
+    # smoke: each wisp leaves the chimney mouth small, then drifts up and left, swelling as it fades
+    ".kk-p{opacity:0;transform-box:fill-box;transform-origin:50% 100%;animation:kk-p 7.5s var(--d,0s) steps(25) infinite}"
+    "@keyframes kk-p{from{scale:.5}12%{opacity:.75}to{translate:-12px -22px;scale:2}}"
+    # Jiji's glance: hidden, then shown for the last 15% of an 11 s cycle
+    ".kk-l{opacity:0;animation:kk-l 11s 4s steps(1) infinite}@keyframes kk-l{85%{opacity:1}}"
+    # the shop-window glint, every 19 s: three positions a pixel apart over about 0.8 s
+    ".kk-L{opacity:0;animation:kk-L 19s 7s steps(1) infinite}@keyframes kk-L{96%{opacity:1}97.4%{translate:1px}98.7%{translate:2px}}"
+    # the bell swings for about 7 s each time Kiki crosses the tower (33-40 s and 63-70 s): +1, 0, -1, 0 ...
+    f".kk-i{{animation:kk-i 120s {PH} steps(1) infinite}}@keyframes kk-i{{"
+    + "".join(",".join(f"{s + .5 * i:g}%" for s in (27.5, 52.5) for i in range(12) if i % m == j) + f"{{translate:{v}}}"
+              for m, j, v in ((4, 0, "1px"), (4, 2, "-1px"), (2, 1, "0")))
+    + "}"
+    # the pram mother: 108 s out of the bakery door, 5px/s along the quay, 8.8 s in at her own door (104px on),
+    # hidden in between
+    f".kk-M{{animation:kk-M 120s {PH} infinite}}@keyframes kk-M{{from{{translate:60px;animation-timing-function:steps(44)}}"
+    "7.32%{translate:104px;opacity:1;animation-timing-function:steps(1)}7.33%,90%{translate:104px;opacity:0;"
+    "animation-timing-function:steps(1)}90.1%{translate:0;opacity:1;animation-timing-function:steps(60)}to{translate:60px}}"
+    # Osono's wave: shown 0-20 s and 100-120 s, while Kiki is low over the harbour near her
+    f".kk-W{{animation:kk-W 120s {PH} steps(1) infinite}}@keyframes kk-W{{16.7%{{opacity:0}}83.3%{{opacity:1}}}}"
     ".kk-b{animation:kk-b 3.2s var(--d,0s) steps(1) infinite}@keyframes kk-b{50%{translate:0 1px}}"
     # the hopping crow: up 8px, a beat at the top with wings out (kk-z on an 11 s period), down again
     ".kk-n{animation:kk-n 11s steps(8) infinite}@keyframes kk-n{39%,50%{translate:0}42%,47%{translate:0 -8px}}"

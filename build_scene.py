@@ -13,13 +13,14 @@ Imports scenes/<slug>.py, then writes to out/<slug>/:
                full theme: colours from THEME plus the theme CSS. Judge readability and chrome colours here.
   scene.svg    raw SVG
   theme.json   the publishable theme (name, colours, css)
-Prints the size budget: the theme's whole css must stay within lib.THEME_CSS_LIMIT (20,000) characters.
+Prints the size budget: the theme's whole css must stay within lib.THEME_CSS_LIMIT (50,000) characters.
 Optional scene attributes: SIZE = (w, h) for a larger 16:9 canvas (default 240x135); THEME = {'canvas', 'accent',
 'overlay'?, 'colors'?} (see BRIEF.md).
 """
 import importlib.util, os, subprocess, sys, tempfile
 from PIL import Image
 import json, re
+import xml.etree.ElementTree as ET
 from lib import THEME_CSS_LIMIT, UNPAINTED, W, H, encode_png, scene_svg, svg_escape, theme_css
 
 DEFAULT_THEME = {"canvas": "#0b1020", "accent": "#f4c66a"}
@@ -147,6 +148,11 @@ def _build(slug, times, tmp):
     if bad:
         print(f"VALIDATOR FAIL: T3 will refuse this theme. Remove these (no clip-path/mask/fill/marker url(#id) "
               f"references inside the SVG; use nested <svg> viewports, <use>, or baked PNGs instead): {bad}")
+    # Chrome renders the frames from inline SVG even when it's malformed, but the theme's data: URL then shows nothing.
+    try:
+        ET.fromstring(svg)
+    except ET.ParseError as e:
+        print(f"SVG XML FAIL: the theme background will be blank: {e}")
     sprite_len = len(svg_escape(m.SPRITES + m.CSS))
     print(f"{slug}: png base64 {len(b64)} + sprites/css {sprite_len} -> theme css {len(css)} / {THEME_CSS_LIMIT}"
           f" {'OK' if len(css) <= THEME_CSS_LIMIT else 'OVER BUDGET'}")

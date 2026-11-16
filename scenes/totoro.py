@@ -14,7 +14,7 @@ viewports and the rain is a PNG strip (see rain()).
 Every animation is stepped in whole pixels (the exceptions are Totoro's 2% breathing stretch and the
 sprouts' growth), and everything sits parked at a constant value between appearances, so the image only
 re-rasterizes when something actually moves. The rain is the one full-canvas animated layer: a 1-bit PNG
-strip stepping at 10 fps. Dad's bus is drawn at half size and doubled (scale(2)).
+strip stepping at 10 fps.
 """
 import base64, math, struct, zlib
 from lib import Canvas, UNPAINTED, hx
@@ -171,12 +171,12 @@ def totoro(cv, cx, by):
     top = by - 50
     P = lambda x, y, c: cv.set(cx + x, top + y, c)
     R = lambda x, y, n, c: cv.rect(cx + x, top + y, n, 1, c)
-    for i, w in enumerate(THW):                                # body: mid grey, lit right rim, shaded left
-        for x in range(-w, w):
+    for i, w in enumerate(THW):                                # body: mid grey, lit right rim, shaded left,
+        for x in range(-w, w):                                 # all solid value planes (no checker dither)
             c = TOT
-            if x >= w - 2 or (x == w - 3 and i % 2):
+            if x >= w - 2:
                 c = TOT_L
-            if x < -w + 3 or (x < -w + 6 and (x + i) % 2 == 0) or (i > 45 and (x + i) % 2 == 0):
+            if x < -w + 3 or i > 45:
                 c = TOT_D
             P(x, i, c)
     for i in range(6, 44, 5):                                  # fur: a few strokes where shade meets mid
@@ -188,10 +188,11 @@ def totoro(cv, cx, by):
     for k, (a, n) in enumerate(EAR):                           # right ear (the left one is a sprite, it twitches)
         R(a - n, k - 7, n, TOT)
         P(a - 1, k - 7, TOT_L)
+    cv.paint(["....gG", ".gggGG", "ddgg.d"], {"g": "#6a9a48", "G": "#a8c870", "d": "#3c5a30"}, cx - 4, top - 3)  # the leaf
     for i in range(17, 48):                                    # belly
         b = min(THW[i] - 3, int(round(16 * math.sqrt(max(0, 1 - ((i - 32) / 15.5) ** 2)))))
         for x in range(-b, b):
-            P(x, i, CREAM_D if x < -b + 2 or (x < -b + 5 and (x + i) % 2 == 0) or i > 45 else CREAM)
+            P(x, i, CREAM_D if x < -b + 3 or i > 45 else CREAM)
     for y, xs in ((22, (-9, -2, 5)), (27, (-13, -6, 2, 9))):   # chest marks
         for x in xs:
             R(x + 1, y, 2, TOT)
@@ -240,13 +241,13 @@ def totoro(cv, cx, by):
 GIRLS = [
     ".......kkkkkk.........",
     ".....kkkkkkkkkk.......",
-    ".....kkkkkkkkkk..m.m..",
-    ".....kkskkksskk.mmmmm.",
-    ".....ksssssssskmmmmmmm",
-    ".....ksessssesksssssmm",
-    ".....ksessssesksdssdsm",
-    ".....kssssssssk.spss..",
-    "......sssddsss..ssss..",
+    ".....kkkkkkkkkk..hhhh.",
+    ".....kkskkksskk.hhhhhH",
+    ".....ksssssssskhhhhhhH",
+    ".....ksessssesk.mmmmhH",
+    ".....ksessssesk.dssdhH",
+    ".....kssssssssk.spsshH",
+    "......sssddsss..sssh..",
     ".........ss....ll.....",
     "......yylssslllyy.....",
     ".....yyyoyyyyoyyy.....",
@@ -267,7 +268,8 @@ GIRLS = [
     "......RRR....RRR......",
 ]
 GPAL = {"k": HAIR, "s": SKIN, "d": SKIN_D, "e": BLACK, "y": YEL, "o": RED, "O": RED_D, "w": WHITE, "m": MEI,
-        "l": LEMON, "r": PINK_D, "R": RED_D, "p": PINK}
+        "l": LEMON, "r": PINK_D, "R": RED_D, "p": PINK,
+        "h": "#8fbfe6", "H": "#5a7fb8"}   # Mei asleep in her pale-blue raincoat hood
 SIGN = [      # "basu" in katakana on the disc
     ".....rrrrr.....",
     "...rrcccccrr...",
@@ -285,26 +287,26 @@ SIGN = [      # "basu" in katakana on the disc
     "...rrcccccrr...",
     ".....rrrrr.....",
 ]
-PLATE = [     # the stop's name down the plate: three kanji-like blocks
+PLATE = [     # the stop's name down the plate: 稲荷前 (Inari-mae), simplified to 7x5 glyphs
     "rrrrrrrrr",
     "ccccccccc",
-    "cckkkkkcc",
-    "cckckckcc",
-    "cckkkkkcc",
-    "cccckcccc",
-    "cckkkkkcc",
-    "ccccccccc",
-    "ccckckccc",
-    "cckkkkkcc",
-    "cckckcccc",
-    "cckckkkcc",
-    "cckckckcc",
+    "cckkckkkc",
+    "ckkkckckc",
+    "cckcckkkc",
+    "ckkkckckc",
+    "cckcckkkc",
     "ccccccccc",
     "cckccckcc",
-    "cckkkkkcc",
-    "cckkckccc",
-    "cckkckkcc",
-    "cckcckkcc",
+    "ckkkkkkkc",
+    "cckckkkkc",
+    "ckkckkckc",
+    "cckccckkc",
+    "ccccccccc",
+    "cckccckcc",
+    "ckkkkkkkc",
+    "ckkkckckc",
+    "ckkkckckc",
+    "ckckcckkc",
     "ccccccccc",
 ]
 
@@ -386,8 +388,9 @@ def draw():
         cv.rect(x + 2, 118, 1, RD - 118, RED)
     cv.paint(["..c..", ".CCC.", "CCCCC", ".kYk.", ".kYk.", "ccccc", "..c..", "..c..", "..c..", ".ccc.", "ccccc"],
              {"c": ROAD, "C": POLE, "k": ROAD_D, "Y": YEL}, 68, 127)   # stone lantern
-    cv.paint([".c..c.", ".cccc.", ".ccccc", ".ccc..", "c.ccc.", "c.ccc.", "cccccc", ".cccc.", "CCCCCC", ".CCCC.", ".CCCC.",
-              "CCCCCC"], {"c": ROAD_L, "C": ROAD}, 58, 126)                # the Inari fox on its plinth
+    cv.paint([".c..c..", ".cc.cc.", ".ccccc.", ".dcccccc", "d.rrrr.", "dddrrc.", "dddccc.", "dddccc.", ".ddccc.",
+              "CCCCCCC", ".CCCCC.", ".CCCCC.", "CCCCCCC"],
+             {"c": ROAD_L, "d": ROAD, "r": RED, "C": ROAD}, 57, 125)       # the Inari fox in its red bib, on its plinth
     cv.rect(79, 134, 19, 2, FOR2)                              # stone steps up to the shrine
     cv.rect(77, 136, 23, 2, ROAD_D)
     # bushes behind the stop, then the lamp light baked over everything so far
@@ -445,7 +448,8 @@ def draw():
     cv.paint(SIGN, {"r": RED, "c": CREAM, "k": HAIR}, 103, 94)
     cv.paint(PLATE, {"r": RED, "c": CREAM, "k": HAIR}, 106, 111)
     for x in (205, 211, 217):                                  # three roadside Jizo in red bibs
-        cv.paint([".ccc.", ".ccc.", ".ccc.", "rrrrr", "crrrc", "ccccc", "ccccc", "ccccc"], {"c": ROAD_L, "r": RED}, x, RD - 8)
+        cv.paint([".Lcd.", ".Lcd.", "..c..", "rrrrr", "Lrrrd", "LLrcd", "LLccd", "LLccd"],
+                 {"L": ROAD_L, "c": POLE, "d": ROAD, "r": RED}, x, RD - 8)       # round heads, lamp-lit from the left
     dim = {hx(a): b for a, b in {RED: RED_D, YEL: ROAD_H, SKIN: SKIN_D, PINK: PINK_D, LEMON: ROAD_H}.items()}
     src = Canvas(W, H)
     girls(src)
@@ -511,6 +515,7 @@ BUS_HEAD = [   # broad round face: low ears, board on the forehead, slit pupils 
     "...SSSSSSSSSSSSSSSS...",
     ".....SSSSSSSSSSSS.....",
 ]
+WINDOW = ["..d...d..", ".dt...td.", "dtttttttt", "dWKtttWKt", "dtttKtttt", "dtcccccct", "dccccccct", "dccccccct"]
 BUS_X, BUS_T0 = -126, 52.8    # where it is parked (its beams just off-canvas), and when in the 120 s cycle it sets off
 BELLY = 47                     # the row under the waiting Catbus's body; Totoro vanishes as he rises past it
 STRIDE_PX, STRIDE_S = 3, .096  # it advances 3 px every 0.096 s, so a 150 px span of wire takes 4.8 s
@@ -564,22 +569,35 @@ def catbus():
     legs = "".join(f"<path class='tt-G' style='animation-delay:{wire(x)},{-.192 * (i % 2):g}s' d='M{x} 20h3v8h-1v1h-2z'/>"
                    for i, x in enumerate(range(12, 48, 6)))
     # headlight beams: three stepped cones laid over each other, so the light is strongest near the eyes;
-    # 60 px long, flaring to 31 px. tt-B brings them up in three steps as the nose reaches the canvas edge,
+    # 44 px long, flaring to about 20 px, fading along their length (about .23, .13, .05 where the layers
+    # overlap) with rounded ends, so they never read as a box over the trees. tt-B brings them up in three steps as the nose reaches the canvas edge,
     # so the light arrives with the cat instead of sweeping in two seconds ahead of it. After 83 strides it
     # halts above the stop, where a still copy stands in for it (tt-W would go on rising and falling under a
     # runner that had stopped); 9.6 s later, with Totoro aboard, the runner carries on out of frame
-    cone = lambda n: "M66 8" + "h5v-1" * (n - 1) + f"h5v{2 * n + 4}" + "h-5v-1" * (n - 1) + "h-5z"
+    def cone(n):                                               # n px long, 6 px tall at the eyes, widening 1 px per
+        d = ""                                                 # 6 px each side, with a rounded far end
+        for y in range(-4 - n // 6, 9 + n // 6):
+            k = abs(y + .5 - 11)
+            x0, x1 = max(0, math.ceil(6 * (k - 3))), int(n * (1 - .3 * (k / (3 + n / 6)) ** 2))
+            if x1 > x0:
+                d += f"M{66 + x0} {y}h{x1 - x0}v1h{x0 - x1}z"
+        return d
     # where it waits: the same image and beams (<use>), standing still on legs cut to the wire under each one
     hx0 = BUS_X + STRIDE_PX * HALT
     hy = WIRE - 29 + sag(hx0 + 27)
     stand = "".join(f"M{hx0 + x} {hy + 20}h3V{WIRE + sag(hx0 + x) - 1}h-1v1h-2z" for x in range(12, 48, 6))
     wait = (f"<g class='tt-H'><path fill='#b84' d='{stand}'/>"
-            f"<use href='#tt-bm' x='{hx0}' y='{hy}'/><use href='#tt-cb' x='{hx0}' y='{hy}'/></g>")
+            f"<use href='#tt-bm' x='{hx0}' y='{hy}'/><use href='#tt-cb' x='{hx0}' y='{hy}'/>"
+            f"<g class='tt-K'><path fill='#f2e48a' d='M{hx0 + 48} {hy + 9}h1v4h-1zm13 0h1v4h-1z'/>"
+            f"<path fill='#20120e' d='M{hx0 + 47} {hy + 9}h1v4h-1zm13 0h1v4h-1z'/></g></g>")
     return (wait + f"<g transform='translate({BUS_X} {WIRE - 29})'><g class='tt-c'>"
             f"<g fill='#b84'>{legs}</g>"
             f"<g class='tt-W' style='animation-delay:{wire(27)}'>"
-            f"<g class='tt-B'><path id='tt-bm' fill='#fe8' fill-opacity='.14' d='{cone(12)}{cone(8)}{cone(4)}'/></g>"
-            f"<g class='tt-m' style='animation-duration:.384s'>{png(cv, 0, 0, 66, 27, attr=" id='tt-cb'")}</g></g></g></g>")
+            f"<g class='tt-B'><g id='tt-bm' fill='#fff4c8'><path fill-opacity='.05' d='{cone(44)}'/>"
+            f"<path fill-opacity='.08' d='{cone(30)}'/><path fill-opacity='.12' d='{cone(16)}'/></g></g>"
+            f"<g class='tt-m' style='animation-duration:.384s'>{png(cv, 0, 0, 66, 27, attr=" id='tt-cb'")}"
+            # Totoro aboard, filling the middle window, once it carries on (only the runner has him, not the waiting copy)
+            f"{art(WINDOW, {'d': TOT_D, 't': TOT, 'W': WHITE, 'K': BLACK, 'c': CREAM}, 23, 10, " class='tt-Q'")}</g></g></g></g>")
 
 
 CHU = [       # chu-Totoro with the acorn sack over his shoulder
@@ -609,17 +627,11 @@ CHIBI = [
     "wwwwwww",
     ".ww.ww.",
 ]
-DAD = [       # Dad off the bus: umbrella, glasses, suit and tie, briefcase
-    "........kk.........",
-    ".....kkkkkkkk......",
-    "...kkkkkkkkkkkk....",
-    ".kkkkkkkkkkkkkkkk..",
-    "kkkkkkkkkkkkkkkkkk.",
-    "k....k..k...k....k.",
+DAD = [       # Dad off the bus, with no umbrella (he forgot it: that is why they came): glasses, suit and tie, briefcase
     "......hhhhh........",
     ".....hhhhhhh.......",
     ".....hsssssh.......",
-    ".....skkskks.......",
+    ".....sgksgks.......",
     ".....sssssss.......",
     "......sssss........",
     ".......wtw.........",
@@ -672,40 +684,84 @@ def cast():
     eye = "h3v1h1v1h1v3h-1v1h-1v1h-3v-1h-1v-1h-1v-3h1v-1h1z"
     wide = (f"<g class='tt-w'><path fill='#fff' d='M{t - 10} {e + 7}{eye}m17 0{eye}'/>"
             f"<path stroke='#012' d='M{t - 9} {e + 10}.5h1m16 0h1'/></g>")
-    grin = (f"<g class='tt-r'><path fill='#012' d='M{t - 13} {e + 13}h1v1h24v-1h1v3h-1v1h-1v1h-1v1h-20v-1h-1v-1h-1v-1h-1z'/>"
-            f"<path stroke='#fff' stroke-width='2' stroke-dasharray='3 1' d='M{t - 10} {e + 16}h19'/></g>")
+    grin = (f"<g class='tt-r'><g id='tt-gr'><path fill='#012' d='M{t - 13} {e + 13}h1v1h24v-1h1v3h-1v1h-1v1h-1v1h-20v-1h-1v-1h-1v-1h-1z'/>"
+            f"<path stroke='#fff' stroke-width='2' stroke-dasharray='3 1' d='M{t - 10} {e + 16}h19'/></g></g><use class='tt-Y' href='#tt-gr'/>")
     side = (f"<g class='tt-g'><path fill='#fff' d='M{t - 9} {e + 10}h2v2h-2zm16 0h2v2h-2z'/>"
             f"<path fill='#012' d='M{t - 8} {e + 10}h2v2h-2zm16 0h2v2h-2z'/></g>")
     return (f"<g class='tt-h'><g class='tt-b'><g class='tt-e'>{ear}</g>{png(cv, TX - 24, GY - 72, 48, 72)}"
-            f"{side}{blink}{wide}{grin}</g>"
+            f"{side}{blink}{wide}{grin}<path class='tt-P' stroke='#cef' d='M151 78.5h1m1 0h1m-2 1h1'/></g>"
             # the drip that lands on his head rides with him when he hops
             f"<path class='tt-i' style='--d:.6;--y:7px' fill='#bdf' d='M{TX - 4} {GY - 59}h1v2h-1z'/></g>")
 
 
 def dads_bus():
-    """A 1950s bonnet bus, heading right, so its door is on the far side, facing the stop. Drawn at half
-    size and doubled, because it pulls up on the road in front of everyone. Parked off-canvas left."""
-    cv = Canvas(56, 26)
-    for y in range(2, 22):                                     # coach body, rounded roof
-        i = 2 if y == 2 else 1 if y == 3 else 0
-        cv.rect(2 + i, y, 40 - 2 * i, 1, CREAM_D if y < 4 else CREAM)
-    cv.rect(42, 13, 11, 9, CREAM)                              # bonnet
-    cv.rect(42, 12, 10, 1, CREAM_D)
-    cv.rect(53, 15, 1, 7, CREAM)
-    cv.rect(2, 15, 52, 2, RED_D)                               # waistband
-    cv.rect(2, 21, 52, 1, TOT_D)
-    for x in range(5, 39, 7):                                  # lit windows
-        cv.rect(x, 6, 6, 6, YEL)
-    cv.rect(40, 6, 2, 6, K[4])                                 # windscreen
-    for x in (8, 43):                                          # wheels
-        cv.rect(x + 1, 20, 4, 6, BLACK)
-        cv.rect(x, 21, 6, 4, BLACK)
-        cv.rect(x + 2, 22, 2, 2, POLE)
-    cv.rect(53, 17, 2, 2, YEL)                                 # headlamp, bumper
-    cv.rect(51, 22, 5, 1, POLE)
-    return (f"<g class='tt-U'><g transform='translate(-250 {GY - 52})scale(2)'>"
-            "<path fill='#fe8' fill-opacity='.16' d='M56 16h5v-1h5v-1h5v8h-5v-1h-5v-1h-5z'/>"
-            f"{png(cv, 0, 0, 56, 26)}</g></g>")
+    """A 1950s bonnet bus, heading right, so its door is on the far side, facing the stop: a rounded coach with
+    a long rounded bonnet, wheels under arched fenders, lit windows with seated passengers and the conductress
+    standing in hers, a driver at the windscreen, a destination board, a tail lamp. Full resolution, 112 px
+    long; it pulls up on the road in front of everyone. Parked off-canvas left. Its headlamp lights the road
+    ahead rather than throwing a beam over the trees."""
+    cv = Canvas(112, 52)
+    PAS, NAVY = "#6b4a30", "#1e2a48"
+    for y in range(3, 44):                                     # coach: rounded roof, rounder at the front
+        r, f = ([5, 3, 2, 1, 1, 1, 0] + [0] * 40)[y - 3], ([10, 7, 5, 4, 3, 2, 1] + [0] * 40)[y - 3]
+        cv.rect(3 + r, y, 83 - r - f, 1, CREAM_D if y < 6 else CREAM)
+    for y, x1 in ((25, 96), (26, 101), (27, 104), (28, 106)) + tuple((y, 107) for y in range(29, 43)):
+        cv.rect(86, y, x1 - 86, 1, CREAM_D if y < 27 else CREAM)   # the bonnet, sloping down to the nose
+    cv.rect(3, 6, 1, 37, CREAM_D)                              # rear corner turning away
+    cv.rect(3, 24, 83, 1, CREAM_D)                             # rub rail
+    cv.rect(3, 28, 104, 3, RED_D)                              # waistband
+    cv.rect(3, 43, 104, 1, TOT_D)                              # skirt
+    for k, x in enumerate((6, 18, 30, 42, 54, 66)):           # lit windows with rounded tops
+        cv.rect(x, 9, 9, 13, YEL)
+        cv.set(x, 9, CREAM), cv.set(x + 8, 9, CREAM)
+        if k in (0, 2, 3):                                     # seated passengers, heads and shoulders
+            h = 14 + (k == 2)
+            cv.rect(x + 2, h, 4, 4, PAS)
+            cv.rect(x + 1, h + 4, 7, 22 - h - 4, PAS)
+            if k == 3:
+                cv.rect(x + 1, h - 1, 6, 1, PAS)               # a hat
+        elif k == 4:                                           # the conductress, standing, cap and bag strap
+            cv.rect(x + 2, 10, 4, 1, NAVY)
+            cv.rect(x + 2, 11, 6, 1, NAVY)
+            cv.rect(x + 2, 12, 4, 3, SKIN)
+            cv.rect(x + 1, 15, 6, 7, NAVY)
+            for j in range(5):
+                cv.set(x + 2 + j, 16 + j, MEI)
+        else:                                                  # empty seats
+            cv.rect(x + 1, 18, 3, 4, MEI)
+            cv.rect(x + 5, 18, 3, 4, MEI)
+    cv.rect(79, 10, 6, 14, K[4])                               # windscreen, the driver in it
+    cv.rect(80, 13, 4, 1, NAVY)
+    cv.rect(80, 14, 3, 3, PAS)
+    cv.rect(79, 17, 5, 7, PAS)
+    cv.rect(61, 5, 15, 4, BLACK)                               # destination board above the front windows
+    cv.rect(62, 6, 13, 2, CREAM)
+    for x in (63, 67, 71):
+        cv.rect(x, 6 + (x % 2), 3, 1, HAIR)
+        cv.set(x + 1, 6 + (x + 1) % 2, HAIR)
+    cv.rect(106, 30, 2, 12, POLE)                              # grille
+    for y in range(31, 41, 2):
+        cv.rect(106, y, 2, 1, ROAD_D)
+    cv.rect(101, 31, 3, 3, YEL)                                # headlamp
+    cv.set(102, 32, WHITE)
+    cv.rect(3, 32, 2, 3, RED)                                  # tail lamp
+    cv.rect(100, 42, 12, 2, POLE)                              # bumpers
+    cv.rect(0, 42, 4, 1, POLE)
+    for wx in (21, 93):                                        # wheels under arched fenders
+        for y in range(36, 52):
+            for x in range(wx - 9, wx + 10):
+                d = math.hypot(x - wx, y - 45)
+                if d < 6.3:
+                    cv.set(x, y, POLE if d < 2.3 else BLACK)
+                elif d < 7.5 and y < 44:
+                    cv.set(x, y, BLACK)
+                elif d < 8.6 and y < 43:
+                    cv.set(x, y, CREAM_D)
+    cv.set(21, 45, ROAD_D), cv.set(93, 45, ROAD_D)
+    pool = "".join(f"M{x} {y}h{w}v1h{-w}z" for x, y, w in
+                   ((112, 49, 14), (108, 50, 30), (106, 51, 40), (106, 52, 44), (108, 53, 36), (112, 54, 20)))
+    return (f"<g class='tt-U'><g transform='translate(-250 {GY - 52})'>"
+            f"<path fill='#fe8' fill-opacity='.22' d='{pool}'/>{png(cv, 0, 0, 112, 52)}</g></g>")
 
 
 RAIN = ((5, 2), (37, 7), (21, 14), (53, 20), (12, 27), (45, 31), (29, 38), (60, 43))   # one 64x48 tile of drops
@@ -741,14 +797,15 @@ def sprites():
     """Back to front. Sprites always draw over the PNG, so the order here is the depth order. Depth on the
     road is the base row: a lower base is nearer, and the two vehicles that pull up at the stop are nearest."""
     sx, sy = SX, SY
-    ring = lambda pts: (f"<path class='tt-a' d='{''.join(f'M{x - 1} {y}.5h2' for x, y in pts)}'/>"
-                        f"<path class='tt-o' d='{''.join(f'M{x - 2} {y - 1}.5h4m-5 1h1m4 0h1m-5 1h4' for x, y in pts)}'/>")
+    ring = lambda pts, a="": (f"<path class='tt-a'{a} d='{''.join(f'M{x - 1} {y}.5h2' for x, y in pts)}'/>"
+                              f"<path class='tt-o'{a} d='{''.join(f'M{x - 2} {y - 1}.5h4m-5 1h1m4 0h1m-5 1h4' for x, y in pts)}'/>")
     shower = "".join(f"M{x}.5-{8 + (i * 29) % 70}v5" for i, x in enumerate(
         [112 + (i * 13) % 34 for i in range(8)] + [DRY[1] + (i * 7) % 20 for i in range(6)]))
     drip = lambda x, y, n, d: f"<path class='tt-i' style='--d:{d};--y:{n}px' d='M{x} {y}h1v2h-1z'/>"
     return (
         # 1. the water surface: puddle rings and the lamp's shimmer. Everything that moves draws over them.
         f"<g stroke='#8ac'>{ring([(140, 152), (216, 148), (66, 151), (242, 152)])}</g>"
+        f"<g stroke='#5f93ad'>{ring([(258, 118), (303, 128), (283, 132)], " style='animation-duration:3.3s'")}</g>"
         f"<path class='tt-o' style='animation-duration:1.7s' stroke='#fd7' d='M{LX - 7} 152.5h2m10 0h2m-9 2h2'/>"
         # 2. the Catbus, up on the wire
         + catbus()
@@ -769,15 +826,18 @@ def sprites():
           f"<path class='tt-d' d='M{TX + 9} {WIRE + sag(TX + 9) + 1}h1v3h-1z'/>"
           f"<path class='tt-p' d='M{TX + 5} {GY - 69}.5h1m7 0h1m-7-2h1m3 0h1m-3-2h1'/>{drip(TX + 21, GY - 59, 56, 2.1)}</g></g></svg>"
         # 6. Satsuki: blink, a sideways glance at Totoro (and, later, at Dad); Mei breathing
-        + f"<path class='tt-k' style='animation-duration:5.3s' stroke='{SKIN}' d='M{sx + 7} {sy + 5}.5h1m4 0h1'/>"
-          f"<g class='tt-g' style='animation-duration:17s'><g id='tt-ey'><path fill='{SKIN}' d='M{sx + 7} {sy + 5}h1v2h-1zm5 0h1v2h-1z'/>"
+        + f"<g class='tt-g' style='animation-duration:17s'><g id='tt-ey'><path fill='{SKIN}' d='M{sx + 7} {sy + 5}h1v2h-1zm5 0h1v2h-1z'/>"
           f"<path fill='#012' d='M{sx + 6} {sy + 5}h1v2h-1zm5 0h1v2h-1z'/></g></g><use class='tt-w' href='#tt-ey'/>"
           "<use class='tt-r' href='#tt-ey'/><use class='tt-S' href='#tt-ey'/>"
-        + f"<g class='tt-m' style='animation-duration:4.4s'>{runs([r[15:] for r in GIRLS[2:9]], GPAL, sx + 15, sy + 2)}</g>"
+          f"<g class='tt-L'><path fill='{SKIN}' d='M{sx + 6} {sy + 4}h3v3h-3zm5 0h3v3h-3z'/>"
+          f"<path fill='#012' d='M{sx + 7} {sy + 4}h1v2h-1zm5 0h1v2h-1z'/></g>"
+          + f"<path class='tt-k' style='animation-duration:5.3s' stroke='{SKIN}' d='M{sx + 7} {sy + 5}.5h1m4 0h1'/>"
+        + f"<g class='tt-m' style='animation-duration:4.4s'>{runs([r[15:] for r in GIRLS[2:9]], GPAL, sx + 15, sy + 2)}"
+          f"<path class='tt-M' fill='#012' d='M{sx + 16} {sy + 6}h1v1h-1zm3 0h1v1h-1z'/></g>"
         # 7. Totoro's gift, a leaf-wrapped bundle: it crosses from his paw to her hand and she keeps hold of it
         + f"<path class='tt-N' fill='#7b5' d='M{sx + 1} {sy + 16}h1v-1h2v1h1v3h-4z'/>"
         # 8. Dad, who walks round the front of his bus to where Totoro was standing
-        + f"<g class='tt-D'>{art(DAD, {'k': BLACK, 'h': HAIR, 's': SKIN, 'w': WHITE, 't': RED_D, 'j': '#6b6f66', 'p': TOT_D, 'b': MEI}, DX, GY - len(DAD))}</g>"
+        + f"<g class='tt-D'>{art(DAD, {'k': BLACK, 'h': HAIR, 's': SKIN, 'w': WHITE, 't': RED_D, 'j': '#6b6f66', 'p': TOT_D, 'b': MEI, 'g': '#cdd6dc'}, DX, GY - len(DAD))}</g>"
         # 9. falling water: drips off Satsuki's umbrella and the lamp
         + f"<g fill='#bdf'>{drip(sx - 2, sy - 2, 28, 0)}{drip(sx + 22, sy - 2, 28, 1.3)}{drip(PX - 1, 67, 77, 1.7)}</g>"
         # 10. Dad's bus at the stop, nearest of all
@@ -793,7 +853,8 @@ SPRITES = sprites()
 #     5-13 s   a drop falls on his umbrella: wide eyes, grin, hop, a shower from the tree, the acorns sprout
 #    45-53 s   and again (40 s cycle; the third time he is gone)
 #    53-61 s   the Catbus gallops in along the wire, beams first; the lamp stutters at 59 s; it waits overhead
-#    61-62 s   Totoro hands Satsuki the bundle
+#    56-76 s   Satsuki looks up at it; Mei wakes (58-72 s)
+#    61-62 s   Totoro hands Satsuki the bundle; he grins up at the Catbus (61-69 s), which glances down at him twice
 #    68-69 s   Totoro leaps up into the Catbus, umbrella and all; the small Totoros hop up after him
 #    70-77 s   it gallops on along the wire and out of frame
 #    77-84 s   rain
@@ -806,7 +867,10 @@ CSS = (
     # ambient
     ".tt-n,.tt-v path{animation:tt-n .6s steps(6) infinite}@keyframes tt-n{to{translate:0 48px}}"
     f".tt-b{{transform-origin:0 {GY}px;animation:tt-b 2.7s steps(3,jump-none) infinite alternate}}@keyframes tt-b{{to{{scale:1 1.02}}}}"
-    ".tt-k,.tt-g,.tt-w,.tt-r,.tt-p,.tt-d,.tt-i,.tt-a,.tt-o,.tt-S,.tt-N,.tt-D,.tt-H{opacity:0}"
+    ".tt-k,.tt-g,.tt-w,.tt-r,.tt-p,.tt-d,.tt-i,.tt-a,.tt-o,.tt-S,.tt-N,.tt-D,.tt-H,.tt-P,.tt-Q,.tt-L,.tt-M,.tt-Y,.tt-K{opacity:0}"
+    # a drop plinks on his umbrella: one spark, three spots on the canopy, irregularly spaced in 4.3 s
+    ".tt-P{animation:tt-P 4.3s steps(1) infinite}@keyframes tt-P{0%{opacity:1;translate:0}4%{opacity:0;translate:0}"
+    "37%{opacity:1;translate:10px -1px}41%{opacity:0;translate:10px -1px}70%{opacity:1;translate:16px 1px}74%,to{opacity:0;translate:16px 1px}}"
     ".tt-e{animation:tt-e 11s steps(1) infinite}@keyframes tt-e{62%,65%{translate:-1px 1px}63.5%,66.5%{translate:0}}"
     ".tt-g{animation:tt-g 23s steps(1) infinite}@keyframes tt-g{38%{opacity:1}56%{opacity:0}}"
     ".tt-k{animation:tt-k 7s steps(1) infinite}@keyframes tt-k{96%{opacity:1}}"
@@ -841,6 +905,13 @@ CSS = (
     "@keyframes tt-c{44%{translate:0;opacity:1;animation-timing-function:steps(82)}50.56%{translate:246px;opacity:1}"
     "50.57%,58.55%{translate:246px;opacity:0}58.56%{translate:246px;opacity:1;animation-timing-function:steps(67)}"
     "63.92%,to{translate:447px;opacity:1}}"
+    # Satsuki looks up at it from 56 s to 76 s; Totoro shows at its window once he is aboard
+    ".tt-L{animation:tt-L 120s steps(1) infinite}@keyframes tt-L{47%{opacity:1}63%{opacity:0}}"
+    ".tt-Q{animation:tt-Q 120s steps(1) infinite}@keyframes tt-Q{57%{opacity:1}70%{opacity:0}}"
+    # Mei wakes (58-72 s); Totoro grins (61-69 s); the waiting Catbus glances down at him twice (62-68 s)
+    ".tt-M{animation:tt-M 120s steps(1) infinite}@keyframes tt-M{48%{opacity:1}60%{opacity:0}}"
+    ".tt-Y{animation:tt-Y 120s steps(1) infinite}@keyframes tt-Y{51%{opacity:1}57.3%{opacity:0}}"
+    ".tt-K{animation:tt-K 120s steps(1) infinite}@keyframes tt-K{52%{opacity:1}54.5%{opacity:0}55.5%{opacity:1}56.5%{opacity:0}}"
     ".tt-H{animation:tt-H 120s steps(1) infinite}@keyframes tt-H{50.56%{opacity:1}58.56%{opacity:0}}"
     ".tt-W{animation:tt-W 4.8s steps(1) infinite}.tt-G{animation:tt-W 4.8s steps(1) infinite,tt-G .384s steps(1) infinite}"
     "@keyframes tt-W{4%{translate:0 1px}12%{translate:0 2px}20%{translate:0 3px}32%{translate:0 4px}"
