@@ -15,8 +15,22 @@ Every row is a <use> of its train's wave, drawn once in the train's own units
 and scaled by s, so a row costs about 100 chars, and the one CSS animation on
 the wave (slide by a whole pattern) moves every row at the same world speed.
 
+Chrome redraws the whole image whenever anything in it moves, re-tessellating
+every stroke in every raster tile, so the cost is per redraw:
+- Rows are drawn crispEdges. Anti-aliased, Chrome triangulates each stroke on
+  the CPU per tile per frame (5 fps at 3440x1440 on an Intel Arc iGPU, one
+  core pegged); crisp, it tessellates them on the GPU (60 fps). The LED grid
+  hides the jaggies, and a static haze puts back the light the sub-pixel rows
+  at the horizon lose without anti-aliasing.
+- All motion advances in steps at FPS, CSS only (SMIL can't be stepped), so
+  the image is redrawn at FPS rather than at the display rate.
+- Near rows use shorter copies of the wave, since off-screen geometry is
+  tessellated too.
+Measure a built theme with tools/perf_theme.mjs.
+
 Earlier versions, in history/: gen_ocean.v7.py (impulses lifted by a
-displacement filter), gen_ocean.v8.py (four plain wave trains, no mesh).
+displacement filter), gen_ocean.v8.py (four plain wave trains, no mesh),
+gen_ocean.v9.py (the same ocean, anti-aliased and redrawn every frame).
 
 Usage: python -I gen_ocean.py <out.css>
 """
@@ -29,6 +43,9 @@ Y_H, Y_NEAR = 40, 372     # horizon and nearest row baseline
 CX = 800                  # vanishing point x
 T = 14                    # seconds per wave period at an 800-unit wavelength
 TAU = 2 * math.pi
+CRISP_S = 0               # rows at least this near skip anti-aliasing (0: all of them, see crisp_split)
+FPS = 30                  # inside the SVG, motion advances in steps at this rate:
+                          # Chrome re-rasterizes the whole image only when a step lands
 NEAR_S = 0.35             # crossing rows at least this near get a body under their crests
 
 # The swell
@@ -124,7 +141,7 @@ def set_wave(sea, s_min):
     return d, x_at(first)
 
 
-style = "<style>.r{animation:m var(--t) linear infinite}@keyframes m{to{translate:var(--l)}}</style>"
+style_rules = [".r{animation:m var(--t) steps(var(--n)) infinite}@keyframes m{to{translate:var(--l)}}"]
 defs = [
     "<linearGradient id='w' x1='0' y1='0' x2='0' y2='1'>"
     "<stop offset='0' stop-color='#000' stop-opacity='0'/>"
@@ -182,12 +199,28 @@ for i in reversed(range(ROWS)):
                   "amp": A0 * (0.6 + 0.4 * math.sin(2.4 * lz + 0.6))})  # hills vary with depth
 # The slide is one wavelength per period, so it loops seamlessly. `translate`
 # (not `transform`) leaves the row's own scale alone.
-defs.append(f"<path id='a' class='r' style='--l:{LAM}px;--t:{T}s' d='{sine(S_FAR)}'/>")
-rows_svg = "".join(
-    row("a", dots("a", (FAR, NEAR), r["s"]), r["s"],
-        CX - r["s"] * LAM * (r["phi"] / TAU % 1), r["yb"], r["amp"] / A0)
-    for r in swell
-)
+# Off-screen geometry is not free: Chrome re-tessellates every stroke in every
+# raster tile, so near rows (big on screen) get a short copy of the sine.
+BANDS = [S_FAR, 0.2, 0.35, 0.6]   # each band's sine covers the view at its smallest scale
+band = lambda s: max(i for i, b in enumerate(BANDS) if s >= b - 1e-9)
+for i, b in enumerate(BANDS):
+    defs.append(f"<path id='a{i}' class='r' style='--l:{LAM}px;--t:{T}s;--n:{T * FPS}' d='{sine(b)}'/>")
+def crisp_split(items, s_of, draw):
+    """Rows at least CRISP_S near are drawn crispEdges, which lets Chrome
+    tessellate their strokes on the GPU instead of triangulating them on the
+    CPU in every raster tile, every frame (5 fps against 60 at 3440x1440). The
+    LED grid on top hides the jaggies. Anti-aliased far rows cost almost as
+    much as all of them, so CRISP_S is 0 and the haze (see HAZE) makes up the
+    light the far rows lose. Rows arrive far to near, so the near ones are one
+    run at the end and paint order is unchanged."""
+    far = "".join(draw(i) for i in items if s_of(i) < CRISP_S)
+    near = "".join(draw(i) for i in items if s_of(i) >= CRISP_S)
+    return far + (f"<g shape-rendering='crispEdges'>{near}</g>" if near else "")
+
+
+rows_svg = crisp_split(swell, lambda r: r["s"], lambda r:
+    row(f"a{band(r['s'])}", dots("a", (FAR, NEAR), r["s"]), r["s"],
+        CX - r["s"] * LAM * (r["phi"] / TAU % 1), r["yb"], r["amp"] / A0))
 
 
 def copy_transform(f):
@@ -217,13 +250,15 @@ def column_frame(m, k):
     return "M" + " ".join(pts)
 
 
+# Phase class m at frame k is class 0 at frame k - m, so all 8 share one
+# keyframes and differ only in delay. Stepped like the rest (SMIL can't be).
+frames = [column_frame(0, k) for k in range(FRAMES)]
+style_rules.append("@keyframes h{" + "".join(
+    f"{100 * k / FRAMES:g}%{{d:path('{f}')}}" for k, f in enumerate(frames + frames[:1])) + "}")
+style_rules.append(f".h{{animation:h {T}s steps({round(T * FPS / FRAMES)}) infinite}}")
 for m in range(8):
-    frames = [column_frame(m, k) for k in range(FRAMES)]
-    defs.append(
-        f"<path id='h{m}' vector-effect='non-scaling-stroke' d='{frames[0]}'>"
-        f"<animate attributeName='d' dur='{T}s' repeatCount='indefinite' "
-        f"values='{';'.join(frames + frames[:1])}'/></path>"
-    )
+    defs.append(f"<path id='h{m}' class='h' vector-effect='non-scaling-stroke' "
+                f"style='animation-delay:{m * T / FRAMES - T:g}s' d='{frames[(-m) % FRAMES]}'/>")
 body = [
     f"<g stroke='url(#cg)' stroke-width='1'>"
     + "".join(f"<use href='#h{j % 8}' transform='translate({CX} 0) scale({j + 0.5:g} 1)'/>" for j in COLS)
@@ -249,33 +284,43 @@ body = [
 crossing = []
 for sea in SEAS:
     sid, n, lam = sea["id"], sea["n"], sea["lam"]
-    slide = f"class='r' style='--l:{sea['dir'] * n * lam:g}px;--t:{n * T * math.sqrt(lam / 800):.0f}s'"
+    period = round(n * T * math.sqrt(lam / 800))
+    slide = f"class='r' style='--l:{sea['dir'] * n * lam:g}px;--t:{period}s;--n:{period * FPS}'"
     line, _ = set_wave(sea, 1 / sea["z"][1])
     near_d, x0 = set_wave(sea, NEAR_S)
-    defs.append(f"<path id='l{sid}' d='{line}'/><use id='{sid}' href='#l{sid}' {slide}/>")
+    defs.append(f"<path id='l{sid}' d='{line}'/><path id='n{sid}' d='{near_d}'/><use id='{sid}' href='#l{sid}' {slide}/>")
     defs.append(f"<linearGradient id='g{sid}' gradientUnits='userSpaceOnUse' x2='0' y1='{-sea['amp']:g}' y2='{sea['amp']:g}'>"
                 f"<stop stop-color='{BODY[0]}' stop-opacity='{BODY[1]:g}'/>"
                 f"<stop offset='1' stop-color='{BODY[0]}' stop-opacity='0'/></linearGradient>")
     defs.append(f"<g id='{sid.upper()}' {slide}><path fill='url(#g{sid})' stroke='none' d='{near_d}V{sea['amp']:g}H{x0}z'/>"
-                f"<use href='#l{sid}'/></g>")
+                f"<use href='#n{sid}'/></g>")
     a, b = (v ** (1 / 1.8) for v in sea["z"])
     for i in range(sea["rows"]):
         # depths thin out toward the viewer, and wander a little so the rows are not evenly spaced
         z = (a + (b - a) * (i + 0.35 * math.sin(5 * i + ord(sid))) / (sea["rows"] - 1)) ** 1.8
         s, yb = depth(z)
         offset = s * n * lam * (sea["slant"] * math.log(z) / TAU / n % 1)
-        crossing.append((z, row(sid.upper() if s >= NEAR_S else sid, dots(sid, (sea["far"], sea["near"]), s), s, CX - offset, yb)))
-body.append("".join(r for _, r in sorted(crossing, reverse=True)))
+        crossing.append((z, s, row(sid.upper() if s >= NEAR_S else sid, dots(sid, (sea["far"], sea["near"]), s), s, CX - offset, yb)))
+body.append(crisp_split(sorted(crossing, reverse=True), lambda c: c[1], lambda c: c[2]))
 
+# Haze under the far rows. With anti-aliasing, the many sub-pixel rows just
+# below the horizon add up to a fine purple haze; crispEdges drops most of it
+# (each pixel takes one row or none). This puts the lost light back as a static
+# gradient, measured as the per-band difference between the two renders.
+HAZE = [(72, 0), (80.7, .5), (86, 1), (97, .95), (103, .8), (112, .68), (117, .4), (125, .27), (131, .08), (138, 0)]
+HAZE_PEAK = 0.26
+defs.append("<linearGradient id='hz' gradientUnits='userSpaceOnUse' x2='0' y1='72' y2='138'>" + "".join(
+    f"<stop offset='{(y - 72) / 66:.3f}' stop-color='#6a4cff' stop-opacity='{a * HAZE_PEAK:.3f}'/>" for y, a in HAZE) + "</linearGradient>")
 backdrop = [
     f"<rect y='{Y_H - 8}' width='{W}' height='{H}' fill='url(#w)'/>",
+    f"<rect y='72' width='{W}' height='66' fill='url(#hz)'/>",
     f"<path d='M0 {Y_H}H{W}' stroke='#9a7bff' stroke-width='10' stroke-opacity='.14'/>",
     f"<path d='M0 {Y_H}H{W}' stroke='#b9a6ff' stroke-width='1' stroke-opacity='.6'/>",
 ]
 
 svg = (
     f"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 {W} {H}' preserveAspectRatio='none' "
-    f"fill='none'>{style}<defs>{''.join(defs)}</defs>{''.join(backdrop)}{''.join(body)}</svg>"
+    f"fill='none'><style>{''.join(style_rules)}</style><defs>{''.join(defs)}</defs>{''.join(backdrop)}{''.join(body)}</svg>"
 )
 uri = urllib.parse.quote(svg, safe=" =:/'.,-;()")
 

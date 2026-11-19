@@ -2,7 +2,7 @@
 
 Animated background themes for T3 Code. The theme files in `themes/` are ready to install.
 
-T3 loads at most about 1.9 MB of theme files in total and silently skips the rest (the cap was 196,608 bytes before the 2026-11-15 nightly), so every theme here can be installed at once (the Ghibli themes are ~22 KB each, Nyx · Aurora Ocean ~49 KB).
+T3 loads at most about 1.9 MB of theme files in total and silently skips the rest (the cap was 196,608 bytes before the 2026-11-15 nightly), so every theme here can be installed at once (the Ghibli themes are ~22 KB each, Nyx · Aurora Ocean ~46 KB).
 
 ## Nyx
 
@@ -18,9 +18,9 @@ Install one with `t3 theme set themes/<file>.json` (the file name is the theme i
 
 Source, in `nyx/`:
 - `nyx-aurora-ocean.css`, `nyx-common.css`, `variant-*.css`: the motion CSS, appended after the stock Nyx CSS.
-- `gen_ocean.py`: generates the ocean, an animated SVG data URI. Its comments explain the wave model and why the rows are drawn the way they are (performance).
+- `gen_ocean.py`: generates the ocean, an animated SVG data URI. Its comments explain the wave model and why the rows are drawn the way they are (performance: crisp edges, motion stepped at 30 fps).
 - `build.py`: rebuilds all three themes into `themes/` (`python -I nyx/build.py`). `build_nyx_animated.py` does the merge and enforces T3's 50,000-character CSS limit.
-- `tools/render_ocean.py`: renders the ocean at given times in headless Chrome (`python -I nyx/tools/render_ocean.py nyx/out/variant-ocean.css <absolute out dir> 2 4 6`). `tools/perf.mjs` measures its frame rate (`node nyx/tools/perf.mjs nyx/out/variant-ocean.css 8`).
+- `tools/render_ocean.py`: renders the ocean at given times in headless Chrome (`python -I nyx/tools/render_ocean.py nyx/out/variant-ocean.css <absolute out dir> 2 4 6`). `tools/perf.mjs` measures its frame rate (`node nyx/tools/perf.mjs nyx/out/variant-ocean.css 8`). `tools/perf_theme.mjs` measures a whole built theme in a page shaped like T3's layout (`node nyx/tools/perf_theme.mjs themes/nyx-aurora-ocean.json 8`).
 
 ## Ghibli pixel art
 
