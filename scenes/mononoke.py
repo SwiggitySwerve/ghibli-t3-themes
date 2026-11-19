@@ -1,4 +1,4 @@
-"""Princess Mononoke: a day and a night at the Forest Spirit's pool, deep in the ancient cedar forest.
+﻿"""Princess Mononoke: a day and a night at the Forest Spirit's pool, deep in the ancient cedar forest.
 
 The chat column covers the middle of the picture (about x 122-198), so the cast stands to the sides:
 San sits astride Moro under the left cedar, Ashitaka waits on Yakul under the right one with one
@@ -39,7 +39,7 @@ Ambient loops on their own periods: breathing 5 s, Moro's head turn 29 s, kodama
 """
 import base64, math, random, struct, zlib
 from PIL import Image, ImageDraw
-from lib import Canvas, UNPAINTED
+from lib import Canvas, UNPAINTED, sprite
 
 NAME = "Princess Mononoke"
 SIZE = W, H = 320, 180
@@ -139,7 +139,19 @@ def firs(cv, base, col, seed, wr, hr, bottom):
 # ---------------------------------------------------------------- base: the day sky
 def draw():
     cv = Canvas(W, H)
-    bands(cv, 0, [(16, S[0]), (38, S[1]), (58, S[2]), (H, S[3])])
+    # sky bands: each edge is long horizontal brush streaks at slightly different heights, riding a slow
+    # swell, with a few one-row wisps of the paler colour above it (a dithered seam read as a stitched line)
+    cv.rect(0, 0, W, H, S[3])
+    r = random.Random(12)
+    for y0, up in ((58, S[2]), (38, S[1]), (16, S[0])):
+        x = 0
+        while x < W:
+            n = r.randrange(8, 26)
+            e = y0 + int(round(1.6 * math.sin(x * .021 + y0))) + r.randrange(-1, 2)
+            cv.rect(x, 0, n, e, up)
+            if r.random() < .35:
+                cv.rect(x + r.randrange(n // 2), e - 2 - r.randrange(2), r.randrange(3, 9), 1, cv.get(min(x + n, W - 1), e))
+            x += n
     # high clouds: flat-bottomed streaks
     for x, y, n in [(98, 22, 30), (104, 21, 16), (108, 23, 26), (168, 34, 44), (178, 33, 24), (186, 35, 34),
                     (140, 50, 30), (146, 49, 14), (206, 56, 30), (96, 62, 24)]:
@@ -514,6 +526,85 @@ MASK = [
     "...DRoooRD...",
     "....DDDDD....",
 ]
+# Ashitaka's curse flares as the Nightwalker rises: the mark darkens his forearm and worm-like tendrils
+# writhe off it, thick at the root and tapering to a curled tip, a wave travelling down each one (two
+# frames, half a wave apart). Drawn at (250, 100); his forearm runs from (266, 111) to the hand at (259, 115)
+TENDRILS = [   # root x, y; heading (radians, 0 = right, up positive); how far it curls; length
+    (12.5, 12, 2.1, 2.4, 10), (15, 11, 1.35, 1.9, 8), (10, 14, 3.4, -2.2, 9), (9, 15.5, 4.3, 1.8, 6)]
+
+
+def curse(phase):
+    k = 4
+    im = Image.new("L", (24 * k, 22 * k), 0)
+    d = ImageDraw.Draw(im)
+    for x, y, a0, curl, n in TENDRILS:
+        for i in range(n * k):
+            t = i / (n * k)
+            a = a0 + curl * t * t + .7 * math.sin(6.3 * t * 1.2 - phase) * t
+            x, y = x + math.cos(a) / k, y - math.sin(a) / k
+            rad = (2.1 * (1 - t) + .7) / 2
+            d.ellipse([(x - rad) * k, (y - rad) * k, (x + rad) * k, (y + rad) * k], fill=255)
+    px = im.resize((24, 22), Image.BOX).load()
+    on = lambda x, y: 0 <= x < 24 and 0 <= y < 22 and px[x, y] > 100
+    return ["".join(("v" if not on(x, y - 1) or not on(x - 1, y) else "p") if on(x, y) else "." for x in range(24))
+            for y in range(22)]
+
+
+# Moro howling to the moon, in profile pointed at the sky: long muzzle, jaw open, ears pinned back, eye shut,
+# a chin notch and a shaded throat edge. Rows 17+ line up
+# with HEAD_A's rows 0+, and it covers the head underlay kept in TORSO
+MORO_H = [
+    ".....................WWk......",
+    "...................WWWWkk.....",
+    "..................WWWWWWWw....",
+    "WWW.............WWWWWWWWwk....",
+    ".WggWWW........WWWWWWWWwkk....",
+    "..WgggggWWWWWgWWWWWWWWwkkk....",
+    "...WgggWWWWWWWWWWWWWWwkkk.....",
+    "....WWWWWWWWWWWWWWWWwkkwww....",
+    ".....WWWWWWWWkkWWWWwkwwwwg....",
+    ".....WWWWWWWWWwwwwwwwwwgg.....",
+    "....WWWWWWWWWWWWWwwwwwg.......",
+    "....WWWWWWWWWWWWWwwwwg........",
+    "...WWWWWWWWWWWWWWWwgg.........",
+    "...WWWWWWWWWWWWWWWg...........",
+    "...WWWWWWWWWWWWWWwg...........",
+    "...WWWWWWWWWWWWWWWwg..........",
+    "..WWWWWWWWWWWWWWWWwg..........",
+    "..WWWWWWWWWWWWWWWWwg..........",
+    "..WWWWWWWWWWWWWWWWWwg.........",
+    "..WWWWWWwWWWWWWWWWWwg.........",
+    ".WWWWWWWWwWWWWWWWWWwg.........",
+    ".WWWWWWWWwWWWWWWWWWwg.........",
+    ".WWWWWWWWWwWWWWWWWWwg.........",
+    "WWWWWwWWWWWWWWWWWWWwg.........",
+    "WWWWWWwWWWWWWWWWWWWWwg........",
+    "WWWWWWWWWWWWwWWWWWWWwg........",
+    "WWWWWWWWWWWWWwWWWWWWwg........",
+    "WWWWWWWWWWWWWwWWWWWWwg........",
+    "WWWWWWWWWWWWWWWWWWWWwg........",
+    "WWWWWWWWWWWWWWWWWWWwg.........",
+    "WWWWWWWWWWWWWWWWWWWwg.........",
+]
+# ... and her sitting child joins in (its head and neck redrawn; five new rows above its old head)
+PUP_H = [
+    "...............kk........",
+    "..............Wkkw.......",
+    ".............WWWkw.......",
+    "............WWWWkw.......",
+    "...........WWWWWww.......",
+    "..........WWWWWwwg.......",
+    "......W..WWWWWWwg........",
+    ".....WgWWWWkkWwwg........",
+    ".....WggWWWWWWwg.........",
+    "......WWWWWWWWwg.........",
+    "......WWWWWWWWwg.........",
+    "......WWWWWWWWwg.........",
+    ".....wWWWWWWWWwg.........",
+    ".....wWWWWWWWWwg.........",
+    ".....wwWWWWWWWwg.........",
+    "......wwWWWWWWwg.........",
+] + PUP[11:]
 PAL = {
     "W": "#f2f6ee", "w": "#c6d6de", "g": "#8faac4", "d": "#5c7c9e", "k": "#101c24", "e": "#f0b030",
     "R": "#e03a34", "D": "#a82430", "s": "#eab890", "S": "#c98a68", "h": "#3a2418", "n": "#1c2c64", "N": "#2c4490",
@@ -528,6 +619,7 @@ YX, YY = 236, GROUND - 54  # Ashitaka on Yakul, under the right cedar, painted m
 PX, PY = 13, GROUND - 33   # Moro's two children, young wolves about Yakul's size: one sits behind her tail ...
 LX, LY = 199, GROUND - 16  # ... and one lies in the grass in front of Yakul
 APES = [(38, 34), (41, 80), (286, 28)]   # the apes: only a hunched shape, and red eyes after dark
+VIGIL = [(50, 100, 0), (76, 62, 1), (258, 28, 2), (280, 84, 3)]   # kodama that gather on the cedars to watch the Nightwalker
 
 
 def spr(rows, x, y, extra="", flip=False):
@@ -611,7 +703,7 @@ def fern(cv, x0, y0, size, lean=0):
                 cv.set(int(x + math.cos(th) * 1.5), int(y + math.sin(th) * 1.5 + 1), M1)
 
 
-def fg(yakul=YAKUL, pup_b=PUP_B):
+def fg(yakul=YAKUL, pup_b=PUP_B, pup=PUP):
     cv = Canvas(W, H)
     trunk(cv, -10, 12, 1, 3)
     trunk(cv, 306, 332, -1, 4)
@@ -636,7 +728,7 @@ def fg(yakul=YAKUL, pup_b=PUP_B):
                (245, 20, 2, 10, 6), (245, 52, 2, 6, 4), (244, 92, 2, 12, 7), (239, 128, 5, 5, 7),
                (12, 60, 1, 14, 5), (13, 118, 3, 8, 5), (306, 44, 1, 10, 4), (305, 110, 3, 9, 5),
                (268, 134, 9, 3, 6), (284, 140, 6, 2, 4)], 7)
-    for cx, cy, rx, ry in [(44, 58, 6, 2), (272, 66, 7, 2)]:
+    for cx, cy, rx, ry in [(44, 58, 6, 2), (272, 66, 7, 2)] + [(x, y + 13, 4, 2) for x, y, _ in VIGIL]:
         moss(cv, cx, cy, rx, ry)
     for x, y, n, lean in [(24, 148, 13, .2), (6, 148, 14, .25), (314, 148, 14, -.25)]:
         fern(cv, x, y, n, lean)
@@ -666,7 +758,7 @@ def fg(yakul=YAKUL, pup_b=PUP_B):
     cv.paint(yakul, PAL, YX, YY, True)
     cv.rect(LX + 1, GROUND, 48, 2, M0)
     cv.rect(PX + 1, GROUND, 24, 2, M0)
-    cv.paint(PUP, PAL, PX, PY)
+    cv.paint(pup, PAL, PX, PY + len(PUP) - len(pup))
     cv.paint(pup_b, PAL, LX, LY)
     # Moro's legs (her body breathes in a sprite above) and her shadow on the moss
     cv.rect(MX + 9, GROUND, 46, 1, M1)
@@ -798,7 +890,23 @@ def nightwalker(flat=False):
     return cv
 
 
-NX, NY = 174, 14                   # where he has risen to: his head just behind where the Forest Spirit's was
+def smoke():
+    """Irontown's smoke, far beyond the trees: a column rising from behind the ridges that leans and
+    spreads downwind, lit on its sunward side. Drawn at (90, 40)."""
+    cv = Canvas(36, 50)
+    # distinct billows, each bigger than the last, bending over downwind; the top ones thin out to a dither
+    for x, y, r, thin in [(6, 46, 2.2, 0), (7, 42, 2.7, 0), (6, 37, 3, 0), (8, 32, 3.3, 0), (9, 27, 3.6, 0),
+                          (10, 21, 4, 0), (15, 16, 4.3, 0), (21, 12, 4.4, 0), (28, 11, 4, 1), (33, 12, 3, 2)]:
+        for yy in range(int(y - r) - 1, int(y + r) + 2):
+            for xx in range(int(x - r) - 1, int(x + r) + 2):
+                d = math.hypot(xx + .5 - x, yy + .5 - y)
+                if d <= r and 0 <= xx < cv.w and 0 <= yy < cv.h and not (thin and (xx + yy) % (thin + 1)):
+                    lit = (xx + .5 - x) * -.6 + (yy + .5 - y) * -.8 > r * .2
+                    cv.set(xx, yy, "#d6cec2" if lit else "#aaa298")
+    return cv
+
+
+NX, NY = 174, 14                  # where he has risen to: his head just behind where the Forest Spirit's was
 HX, HY = 250, SHORE + 10 - 46      # Forest Spirit, parked behind the right-hand trunk
 LEGS_A, LEGS_B = [[DEER[34][:28]] + f for f in (DEER_A, DEER_B)]
 
@@ -813,8 +921,11 @@ def deer(first):
             f"<g class='pm-l pm-e'>{part(3, LEGS_B, 16, 34)}"
             + (f"<path stroke='#cfe' d='M{HX + 16} {HY + 46}.5h8m10 0h9'/>" if first else "") + "</g></g>"
             "<g class='pm-s'><use href='#pm-d3'/>"
-            + (f"<path stroke='#be6' d='M{HX + 17} {HY + 45}.5h2m6 0h1m7 0h2m6 0h1m-24-1h1m6 0h1m8 0h1m-16-1h1m15 0h1'/>"
-               f"<path stroke='#e33' d='M{HX + 18} {HY + 42}.5h1'/><path stroke='#fff' d='M{HX + 34} {HY + 42}.5h1'/>" if first else "")
+            # where he stands, lilies open on the water round his hooves: pads, then blossoms on them
+            + (f"<path stroke='#5a4' d='M{HX + 11} {HY + 46}.5h5m8 0h5m9 0h6m-29 1h7m7 0h6m10 0h5'/>"
+               f"<path stroke='#9d5' d='M{HX + 12} {HY + 46}.5h2m11 0h2m11 0h2'/>"
+               f"<path stroke='#f8b' d='M{HX + 12} {HY + 45}.5h2m26 0h2m-27-1h1m26 0h1'/>"
+               f"<path stroke='#fff' d='M{HX + 25} {HY + 45}.5h3m-2-1h1'/>" if first else "")
             + "</g></g></g></g>")
 
 
@@ -855,14 +966,15 @@ FLICKS = [("pm-F",dict(yakul=put(YAKUL, (12, 36, "."), (13, 36, ".uu"), (14, 34,
           ("pm-F pm-2", dict(yakul=put(YAKUL, (26, 3, "u"), (27, 2, "uu."), (28, 2, "uuc")))),
           ("pm-F pm-3", dict(pup_b=put(PUP_B, (0, 16, "."), (1, 15, "."), (1, 17, "WW")))),
           ("pm-C", dict(yakul=put(YAKUL, (23, 8, "y"), (24, 8, "y"), (25, 7, "yy"), (26, 7, "y"), (27, 7, "a"),
-                                  (28, 7, "y"), (29, 8, "y"))))]
+                                  (28, 7, "y"), (29, 8, "y")))),
+          ("pm-Y pm-j", dict(pup=PUP_H))]
 
 
 # Moro's two heads (profile; turned to look at you) swap over an underlay kept in the torso image
 HEAD_A = [row[40:] for row in MORO[:14]]
 TORSO = [(row[10:40] + "".join("W" if p in PAL and q in PAL else "." for p, q in zip(HEAD_A[i], MORO_B[i])) if i < 14 else row[10:])
          for i, row in enumerate(MORO[:SPLIT + 1])]
-CLS_H = " class='pm-h'"
+CLS_H, CLS_Y = " class='pm-h'", " class='pm-Y'"
 KOD = [(112, 131, 0), (136, 136, 2), (272, 53, 4), (44, 45, 1), (170, 137, 5)]
 MOON = "h10v1h3v2h2v3h1v8h-1v3h-2v2h-3v1h-10v-1h-3v-2h-2v-3h-1v-8h1v-3h2v-2h3z"
 
@@ -875,6 +987,8 @@ SPRITES = (
     f"<path fill='#ffe' d='M103 21{MOON}'/><path stroke='#cdd' d='M103 25.5h3m-2 1h2m5 7h3m-2 1h2m-7 1h2'/></g></g>"
     # the Nightwalker, between sky and forest
     + f"<g class='pm-n'><g class='pm-q'>{img(nightwalker(), NX, NY)}</g></g>"
+    # Irontown's smoke beyond the trees, while the Forest Spirit stands on the pool
+    + img(smoke(), 90, 40, " class='pm-I'")
     + img(mid())
     # glints on the pool
     + "<path class='pm-a' stroke='#efe' d='M98 116.5h5m96 6h7m-30 9h4m52 2h6m-222-6h5'/>"
@@ -889,8 +1003,8 @@ SPRITES = (
     # Moro's tails, then the breathing group: her body and head, San
     + f"<g class='pm-q'>{spr([row[:12] for row in MORO[10:30]], MX, MY + 10)}</g>"
     + f"<g class='pm-r'>{spr(TORSO, MX + 10, MY)}"
-      f"<g class='pm-g'>{spr(HEAD_A, MX + 40, MY)}<path class='pm-c' stroke='#eff' d='M{MX + 55} {MY + 7}.5h2'/></g>"
-      f"{spr(MORO_B, MX + 40, MY, CLS_H)}{spr(SAN, SX, SY)}"
+      f"<g class='pm-y'><g class='pm-g'>{spr(HEAD_A, MX + 40, MY)}<path class='pm-c' stroke='#eff' d='M{MX + 55} {MY + 7}.5h2'/></g>"
+      f"{spr(MORO_B, MX + 40, MY, CLS_H)}</g>{spr(MORO_H, MX + 40, MY - 17, CLS_Y)}{spr(SAN, SX, SY)}"
       f"<path class='pm-c' style='animation-delay:-2s' stroke='#eb9' d='M{SX + 11} {SY + 13}.5h2m3 0h2'/>"
       f"<path class='pm-c' style='animation-delay:-4s' stroke='#eff' d='M{SX - 1} {SY + 29}.5h1m-2 1h2m-1 1h1'/>"
       f"<g class='pm-M'>{spr(MASK, SX + 7, SY + 4)}</g></g>"
@@ -905,14 +1019,21 @@ SPRITES = (
     # the foreground, Moro and San, breathing included), so they need no occluder over them
     + "<g class='pm-L'><path class='pm-a' stroke='#7de' d='M211 103.5h6m5 2h8m-16 3h5m6 3h6m-19 3h4m4 4h7m-11 5h3'/>"
       "<path class='pm-a pm-e' stroke='#5bd' d='M216 104.5h4m-12 2h5m13 2h4m-13 2h7m-1 5h5m-15 5h4'/></g>"
+    # as the Forest Spirit fades at dusk, motes of his light lift off him towards the giant rising behind
+    # (nothing nearer stands there, so they too sit above the night)
+    + "<path class='pm-S' stroke='#dff' d='M206 72.5h1m14 6h2m-11 7h1m16-2h1m-24 11h2m14 1h1m-6-18h1m-14 24h1m22-8h1'/>"
     # kodama (glowing faintly after dark), Ashitaka's cursed arm, and after dark the apes' eyes and fireflies
     + f"<defs><path id='pm-O' fill='#cfe' fill-opacity='.11' d='{oval(7, 9, 2)}'/>"
       "<g id='pm-o'><path fill='#bdc' d='M-1 4h2v1h1v1h-1v3h-2v-3h-1v-1h1zm-2 2h1v1h-1zm5 0h1v1h-1zm-4 3h1v2h-1zm3 0h1v2h-1z'/>"
       "<g id='pm-K' class='pm-k'><path fill='#efe' d='M-3-4h5v1h1v1h1v4h-1v1h-1v1h-5v-1h-1v-6h1z'/>"
-      "<path fill='#123' d='M-3-1h2v2h-2zm4 0h1v1h-1zm-1 2h1v1h-1z'/></g></g></defs>"
+      "<path fill='#123' d='M-3-1h2v2h-2zm4 0h1v1h-1zm-1 2h1v1h-1z'/></g></g>"
+      "<g id='pm-V'><use href='#pm-O'/><use href='#pm-o'/></g></defs>"
     + "<g class='pm-N'>" + "".join(f"<use href='#pm-O' x='{x}' y='{y}'/>" for x, y, _ in KOD) + "</g>"
     + "".join(f"<use href='#pm-o' x='{x}' y='{y}' style='--d:{d}'/>" for x, y, d in KOD)
-    + f"<path class='pm-a' stroke='#c5f' d='M{YX + 24} {YY + 22}.5h1m-2 1h1'/>"
+    + "".join(f"<use class='pm-v' href='#pm-V' x='{x}' y='{y}' style='--d:{d}'/>" for x, y, d in VIGIL)
+    + f"<path stroke='#c5f' d='M{YX + 24} {YY + 22}.5h1m-2 1h1'/>"
+    + "<g class='pm-X'>" + "".join(f"<g class='pm-l{e}'>{sprite(c, {'v': '#c8f', 'p': '#529'}, 250, 100)}</g>"
+                                   for c, e in zip((curse(0), curse(math.pi)), ("", " pm-e"))) + "</g>"
     # the apes' eyes blink, each in its own time; deep in the night a fourth pair opens on the far-right trunk
     + "<g class='pm-N'>" + "".join(f"<path class='pm-B' style='animation-delay:-{2.3 * i:g}s' stroke='#e33' d='M{x - 2} {y}.5h1m2 0h1'/>"
                                    for i, (x, y) in enumerate(APES))
@@ -969,6 +1090,16 @@ CSS = (
     # apes: blinks, and the fourth pair's eyes open 40-62%
     ".pm-B{animation:pm-B 7s steps(1) infinite}@keyframes pm-B{92%{opacity:0}96%{opacity:1}}"
     ".pm-A{opacity:0;animation:pm-A 220s steps(1) infinite}@keyframes pm-A{40%{opacity:1}62%{opacity:0}}"
+    # Irontown's smoke climbs into the day sky 9-24%; the Forest Spirit's motes lift off him 25-31%
+    ".pm-I{opacity:0;animation:pm-I 220s steps(10) infinite}@keyframes pm-I{9%{opacity:0;translate:0 6px}12%,21%{opacity:.8}24%,to{opacity:0;translate:0}}"
+    ".pm-S{opacity:0;animation:pm-S 220s steps(4) infinite}@keyframes pm-S{25%{opacity:0;translate:0}26%{opacity:1}31%,to{opacity:0;translate:0 -16px}}"
+    # Ashitaka's curse flares as the Nightwalker rises, writhing (its two frames alternate on the pm-l walk beat)
+    ".pm-X{opacity:0;animation:pm-X 220s steps(1) infinite}@keyframes pm-X{27%{opacity:1}35%{opacity:0}}"
+    # kodama gather on the cedars one by one to watch the Nightwalker wade, and slip away before dawn
+    ".pm-v{opacity:0;animation:pm-v 220s calc(var(--d)*-4.4s) steps(1) infinite}@keyframes pm-v{39%,68%{opacity:1}69%{opacity:0}}"
+    # deep in the night Moro throws back her head and howls at the moon; her sitting child joins in a beat later
+    ".pm-y{animation:pm-y 220s steps(1) infinite}@keyframes pm-y{45%{opacity:0}49%{opacity:1}}"
+    ".pm-Y{opacity:0;animation:pm-Y 220s steps(1) infinite}.pm-Y.pm-j{animation-delay:-217.8s}@keyframes pm-Y{45%{opacity:1}49%{opacity:0}}"
     # fireflies
     ".pm-f{animation:pm-f 14s steps(9) infinite alternate,pm-a 4s steps(1) infinite}.pm-f.pm-e{animation-delay:-14s,-2s}"
     "@keyframes pm-f{to{translate:9px -9px}}"

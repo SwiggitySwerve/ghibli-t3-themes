@@ -10,16 +10,17 @@ form and the spirit ferry comes in along the horizon to dock behind the island.
 Layers, back to front:
   PNG (draw)   sky, clouds, far islands, bathhouse + bridge + rock, reflections, sea, rail, poles
   SPRITES      water glints first (so every moving thing is drawn over the water surface), stars, cloud
-               wisps, smoke, steam, furnace fire, frog, bridge procession + railing, ferry, the island's right
+               wisps, smoke, steam, furnace fire, frog, bridge procession and Haku the boy + railing, ferry, the island's right
                end again (nested PNG, so the ferry docks BEHIND it), window flicker, Kashira, the pigs' stall,
                the River Spirit (in a nested svg viewport), Lin's tub, Yubaba,
                Haku (in front of the bathhouse), train (nested PNG), foreground (nested PNG: platform +
                travellers, so the train passes BEHIND them), idle overlays (mask, ponytail, blink,
                glance, Boh, soot sprites, lamp)
-Moments on a 120 s cycle: train 5-29 s, River Spirit 29-38 s, bridge procession 36-80 s, Haku 75-105 s,
-Yubaba 106-119 s.
-The ferry is on 240 s: in 110-168 s, docked out of sight, out again 182-239 s. Every moving sprite steps
-in whole pixels and holds still while off-canvas.
+Moments on one 240 s cycle in two acts (see the CSS comment for the timings): act 1 has the train running
+through, the River Spirit, the procession, Haku the dragon and Yubaba flying out; act 2 has the train calling at
+the station, Haku the boy on the bridge, the hopping lamp going off down the line and back, and Yubaba flying
+home. The ferry comes in 110-168 s, docks out of sight, and leaves 182-239 s. Every moving sprite steps in
+whole pixels and holds still while off-canvas.
 """
 import base64, math, random, struct, zlib
 from lib import Canvas, UNPAINTED
@@ -215,10 +216,14 @@ def draw():
     cloud(cv, [(-6, 84, 14), (10, 91, 10), (24, 97, 6)], HZ - 4)
     for x, n, h in [(252, 26, 1), (256, 14, 2), (300, 20, 1)]:
         cv.rect(x, HZ - h, n, h, S[6])
-    cv.rect(260, HZ - 5, 5, 3, S[6])
-    cv.rect(259, HZ - 6, 7, 1, S[5])
-    cv.rect(266, HZ - 8, 3, 6, S[5])
-    cv.rect(265, HZ - 7, 5, 3, S[5])
+    # the lonely house on its islet: gabled, with a tree; its window (dark here) lights up as a sprite
+    for y, x, n in [(93, 261, 3), (94, 260, 5), (95, 258, 9)] + [(y, 259, 7) for y in range(96, 104)]:
+        cv.rect(x, y, n, 1, S[5])
+    cv.rect(258, 95, 9, 1, S[4])
+    cv.rect(261, 97, 2, 3, S[4])
+    for y, x, n in [(95, 268, 3), (96, 267, 5), (97, 267, 5), (98, 267, 5), (99, 268, 3), (100, 269, 1), (101, 269, 1),
+                    (102, 269, 1), (103, 269, 1)]:
+        cv.rect(x, y, n, 1, S[4])
     # bathhouse rock (lumpy, flat waterline) and the bridge's far bank
     x = BX - 58
     for n, h in [(2, 1), (2, 2), (3, 4), (3, 5), (96, 6), (4, 7), (3, 5), (4, 4), (2, 5), (3, 3), (3, 2), (3, 1)]:
@@ -452,8 +457,6 @@ def foreground():
         cv.rect(*o(x + 1, PT + 14), 2, 1, DARK)
     cv.rect(*o(CHX + 2, PT + 6), 5, 1, S[7])
     cv.rect(*o(CHX + 3, PT + 8), 4, 1, "#c9bfd6")
-    for y, n in [(6, 5), (8, 3), (11, 4), (14, 2)]:
-        cv.rect(*o(LX - 2 + y % 2, PT + y), n, 1, S[11])
     cv.paint(CHIHIRO, CHI_PAL, *o(CHX, CHY))
     return cv
 
@@ -472,24 +475,27 @@ PANTO = ["kkkkkkk",       # a diamond pantograph on each car roof, its bar press
          "..k.k..",
          ".k...k.",
          "..k.k.."]
-PAX = [["..kkk..",      # upright, facing out
-        "..kkk..",
-        "...k...",
+PAX = [["..eke..",      # seated, facing out: a round head on a neck, sloping shoulders (not a peaked hut)
         ".ekkke.",
         ".kkkkk.",
-        "kkkkkkk"],
-       [".......",      # head bowed
-        ".kkk...",
-        ".kkke..",
-        "..kk...",
-        ".kkkke.",
-        "ekkkkkk"],
-       [".......",      # small, sitting low, turned away
-        "...kk..",
-        "...kk..",
+        ".ekkke.",
         "...k...",
-        "..ekkk.",
-        ".ekkkkk"]]
+        ".ekkke.",
+        "ekkkkke"],
+       [".......",      # head bowed, turned to the window
+        "..ekke.",
+        ".ekkkkk",
+        ".ekkkke",
+        "..ekk..",
+        ".ekkkke",
+        "ekkkkkk"],
+       [".......",      # a small child sitting low
+        ".......",
+        "..eke..",
+        "..kkk..",
+        "..eke..",
+        ".ekkke.",
+        ".kkkkk."]]
 
 
 def train():
@@ -513,7 +519,7 @@ def train():
             cv.rect(x, 8, 7, 8, "#ffc95e")
             cv.rect(x, 8, 7, 1, S[11])
             if (i * 5 + x0) % 3 == 0:             # a shadow passenger: dark, see-through at the edges, still
-                cv.paint(PAX[(i + x0) % 3], {"k": "#2a2034", "e": "#8a5a52"}, x, 10)
+                cv.paint(PAX[(i + x0) % 3], {"k": "#3a2a44", "e": "#9a6a5c"}, x, 9)
     cv.rect(CAR, 4, 4, 24, DARK)                  # the bellows between the cars
     for y in range(6, 27, 3):
         cv.rect(CAR, y, 4, 1, "#3b2a4d")
@@ -573,8 +579,9 @@ def haku():
         o = i % 2 * (i > 1)                         # the first tuft is full width, flush against the head's mane
         tuft = (f"M{x + o} {y - h}h{4 - o}v1h2v{h - 1}h-{6 - o}z" if h else
                 f"M{x + 4} {y - 1}h5v1h2v1h-2v1h-5z" if i == 20 else "")
-        seg = f"d='M{x} {y}h6v{t}h-6z{leg}'/>"
-        body += f"<g style='--d:{i - 1}'><path {seg}<path fill='#3ba' d='{tuft}'/></g>" if tuft else f"<path style='--d:{i - 1}' {seg}"
+        seg = f"<path d='M{x} {y}h6v{t}h-6z{leg}'/>" + (f"<path fill='#3ba' d='{tuft}'/>" if tuft else "")
+        # slices move in pairs (one animation per 12px) so the parked dragon costs 11 animations, not 21
+        body += (f"<g style='--d:{i // 2}'>" if i % 2 else "") + seg + ("</g>" if i % 2 == 0 else "")
         x += 6
     birds = ""
     for k in (0, 1):                                # the paper shikigami chasing him, two flutter frames
@@ -671,6 +678,20 @@ WING_DN = ["kkkkkkkkkk",      # primaries sweep down and back, notched along the
            "k.kkkkkkk.",
            ".k.kkkkk..",
            "..k.kk...."]
+HAKU_BOY = ["..hhh..",      # Haku as the boy: dark green bob, white suikan with a blue collar, indigo hakama
+            ".hhhhh.",
+            "hhhhhhh",
+            "hsksksh",
+            "hsssssh",
+            "h.sss.h",
+            ".wbwbw.",
+            "wwwbwww",
+            "wwwwwww",
+            "swwwwws",
+            ".ppppp.",
+            ".ppppp.",
+            ".ppppp.",
+            ".pp.pp."]
 KASHIRA = ["..ggg..",       # one of the three bouncing green heads
            ".ggggg.",
            "gkkgkkg",
@@ -719,12 +740,12 @@ FOAM = [[".ff..........ff..",       # the foam collar where he breaks the surfac
          "m..m.........m..m",
          "................."]]
 RX, RY = 69, 128             # River Spirit, parked just under the surface line he rises through
-BOH = [".mm.mm.",      # round ears, a dark underside edge against the pink sea
-       ".mmmmm.",
-       "mmmmkmn",
-       "mmmmmm.",
-       "dmmmmd.",
-       ".dddd.."]
+BOH = ["...mm.mm.",      # round ears, a dark underside edge against the pink sea, a tail curling off the back
+       "...mmmmm.",
+       "d.mmmmkmn",
+       ".dmmmmmm.",
+       "..dmmmmd.",
+       "...dddd.."]
 TX, TY, YX, YY = 146, 121, -30, 42        # Lin's tub; Yubaba's parked position
 WIN = windows()
 
@@ -751,19 +772,18 @@ EY = CHY + 5                     # Chihiro's eye row
 SPRITES = (
     # water glints, the shimmer in the bathhouse reflection and on the swells below the rail. First, so every
     # moving thing (ferry, train, Haku) is drawn over the water surface rather than under its sparkle.
-    "<path class='sa-a' stroke='#fea' d='M200 110.5h7m40 3h5m-234 0h6m262 9h6m-180 8h5'/>"
-    "<path class='sa-b' stroke='#fea' d='M218 112.5h6m52-3h8M8 118.5h7m234 6h6m-90 16h9'/>"
+    # (the same two paths carry the twinkling stars)
+    "<path class='sa-a' stroke='#fea' d='M200 110.5h7m40 3h5m-234 0h6m262 9h6m-180 8h5M77 4.5h1M203 4.5h1M291 6.5h1M151 22.5h1'/>"
+    "<path class='sa-b' stroke='#fea' d='M218 112.5h6m52-3h8M8 118.5h7m234 6h6m-90 16h9M176 7.5h1M30 19.5h1M225 21.5h1M305 30.5h1'/>"
     f"<path class='sa-g' stroke='#fea' d='M{BX - 30} 111.5h4m14 0h5m20 0h4m-36 2h5m18 0h4m-20 2h5m6 3h4'/>"
     "<path class='sa-g sa-g2' stroke='#8f5591' d='M24 143.5h12m50 4h10m46-5h9m96 3h12m30-4h10'/>"
-    # stars that twinkle, two cloud wisps that form and drift, chimney smoke puffs, bath steam
-    "<path class='sa-a' stroke='#fea' d='M77 4.5h1M203 4.5h1M291 6.5h1M151 22.5h1'/>"
-    "<path class='sa-b' stroke='#fea' d='M176 7.5h1M30 19.5h1M225 21.5h1M305 30.5h1'/>"
-    # a light comes on in the lonely house on the islet as the train leaves, and its glint on the water
-    "<path class='sa-h' stroke='#fc6' d='M262 102.5h1m-2 7h2'/>"
+    # two cloud wisps that form and drift, chimney smoke puffs, bath steam
+    # the lonely house's window lights up each time the train has gone by, with its streak on the water
+    "<path class='sa-h' fill='#fc6' d='M261 97h2v3h-2zm-2 11h5v1h-5zm1 2h3v1h-3z'/>"
     "<path class='sa-c' fill='#6c4a8c' d='M174 27h44v1h-44zm8-1h22v1h-22z'/>"
     "<path class='sa-c sa-c2' fill='#8f5591' d='M196 35h30v1h-30zm10 1h34v1h-34z'/>"
     + "".join(f"<path class='sa-p' style='--d:{i}' fill='#2a2859' d='M{CHM + 4} 9h4v-1h3v1h1v2h-2v1h-5v-1h-1z'/>" for i in range(3))
-    + "".join(f"<path class='sa-p' style='--d:{d}' fill='#fde' fill-opacity='.5' d='M{BX + 29} 55h3v-1h2v1h1v2h-6z'/>" for d in (.5, 2))
+    + "".join(f"<path class='sa-p' style='--d:{d}' fill='#fde' fill-opacity='.5' d='M{BX + 29} 55h3v-1h2v1h1v2h-6z'/>" for d in (.5,))
     # the boiler-room fire flaring behind its grate, the frog greeter in the doorway
     + f"<path class='sa-l' stroke='#fea' stroke-width='2' stroke-dasharray='1 1' d='M{KX} 95h9'/>"
     + "<g class='sa-j' style='--d:2'>" + runs(FROG, {"g": "#6a4", "b": "#36a", "k": "#213"}, BX + 2, G - 6) + "</g>"
@@ -774,7 +794,10 @@ SPRITES = (
     + "<g id='sa-ks'>" + runs(KASUGA, {"w": "#f6f0e8", "o": "#e74", "k": "#213"}, BR0 - 19, G - len(KASUGA)) + "</g>"
       "<use href='#sa-ks' x='-9'/><g id='sa-ot'>"
     + runs(OOTORI, {"y": "#fd5", "o": "#f83", "g": "#6a4", "k": "#213"}, BR0 - 36, G - len(OOTORI))
-    + "</g><use href='#sa-ot' x='-8'/></g></g></svg>"
+    + "</g><use href='#sa-ot' x='-8'/></g></g>"
+    # act 2: Haku, as the boy, walks out from the bathhouse end, stands looking out at the station, goes back in
+    + "<g class='sa-hk'>" + runs(HAKU_BOY, {"h": "#1d3634", "s": "#fdc", "k": "#213", "w": "#f6f0e8", "b": "#7ab",
+                                             "p": "#4a4f96"}, BR1, G - len(HAKU_BOY)) + "</g></svg>"
     + f"<path stroke='#b33' d='M{BR0} {G - 5}.5h{BR1 - BR0}m-{BR1 - BR0} 2h{BR1 - BR0}'/>"
       f"<path stroke='#7a2237' stroke-width='6' stroke-dasharray='1 5' d='M{BR0 + 1} {G - 3}h{BR1 - BR0 - 1}'/>"
       f"<path stroke='#f74' stroke-dasharray='1 11' stroke-width='3' d='M{BR0 + 1} {G - 7.5}h{BR1 - BR0 - 1}'/>"
@@ -785,8 +808,8 @@ SPRITES = (
       f"<path fill='#2c6e6a' d='M3 {HZ - 9}h24v1h-24zM7 {HZ - 13}h16v1h-16z'/>"
       f"<path stroke='#fea' stroke-width='3' stroke-dasharray='2 1' d='M5 {HZ - 5.5}h20'/>"
       f"<path stroke='#fea' stroke-dasharray='1 2' d='M9 {HZ - 10.5}h13'/>"
-      f"<path class='sa-a' stroke='#f74' stroke-dasharray='1 3' d='M1 {HZ - 3.5}h30'/>"
-      f"<path class='sa-b' stroke='#fea' stroke-dasharray='3 2' d='M3 {HZ + 1.5}h26m-22 1h18'/></g>"
+      f"<path stroke='#f74' stroke-dasharray='1 3' d='M1 {HZ - 3.5}h30'/>"
+      f"<path stroke='#fea' stroke-dasharray='3 2' d='M3 {HZ + 1.5}h26m-22 1h18'/></g>"
     + img(island_end(), IX, IY)
     # the sea railway's poles rise above the train and carry its overhead wire (nearer than the ferry, so after it)
     + f"<path fill='{DARK}' d='" + "".join(f"M{x} 98h1v15h-1zM{x - 3} 99h7v1h-7zM{x - 2} 103h5v1h-5z" for x in POLES) + "'/>"
@@ -795,7 +818,7 @@ SPRITES = (
         for a, b in [(-36, POLES[0]), POLES[:2], POLES[1:], (POLES[2], 346)]) + "'/>"
     # windows going dark / lighting up (before Haku, who flies in front of the building)
     + "".join(f"<path class='sa-m{k}' fill='{c}' d='{d}'/>" for k, (d, c) in enumerate(
-        [flicker((3, 31, 58, 77), "#7a2237"), flicker((12, 40, 66), "#7a2237"), flicker((20, 47, 83, 8), "#ffe2a0")]))
+        [flicker((3, 31, 58, 77), "#7a2237"), flicker((20, 47, 83, 8), "#ffe2a0")]))
     # Yubaba's penthouse windows flare just before she flies out
     + f"<path class='sa-x' stroke='#fff' stroke-width='2' stroke-dasharray='2 2' d='M{BX - 10} 33h18'/>"
     # the three Kashira hopping one after another on the terrace left of the entrance
@@ -832,9 +855,12 @@ SPRITES = (
     + runs(PANTO, {"k": "#213"}, -136, 102) + runs(PANTO, {"k": "#213"}, -56, 102)
     + f"<path opacity='.3' fill='#213' d='M-158 {RAIL + 1}h{TW}v7h-{TW}z'/>"
       f"<path opacity='.5' stroke='#fc6' stroke-dasharray='7 2' d='M-152 {RAIL + 3}.5h64m16 0h64m-140 3h60m20 0h56'/>"
-      f"<path class='sa-a' stroke='#fff' stroke-dasharray='3 4' d='M-158 {RAIL}.5h{TW}'/></g>"
+      f"<path stroke='#fff' stroke-dasharray='3 4' d='M-158 {RAIL}.5h{TW}'/></g>"
     # foreground: platform and travellers, then their idle life
     + img(foreground(), FX, FY)
+    # the lamp's reflection, hidden while the lamp is off down the line
+    + "<path class='sa-lr' fill='#ffe2a0' d='" + "".join(f"M{LX - 2 + y % 2} {PT + y}h{n}v1h-{n}z"
+                                                         for y, n in [(6, 5), (8, 3), (11, 4), (14, 2)]) + "'/>"
     + "<g class='sa-nf'>" + img(noface(), NX, NY)
     + f"<path fill='#2a2859' d='" + "".join(f"M{NX + 2 + k} {PT + 6 + 2 * k}h{16 - 2 * k}v1h-{16 - 2 * k}z" for k in range(5))
     + f"'/><path fill='#c9bfd6' d='M{NX + 7} {PT + 9}h5v1h-5z'/>"
@@ -849,22 +875,47 @@ SPRITES = (
     + f"<g class='sa-v'><path class='sa-a2' stroke='#213' d='M{PX - 9} {CHY}.5h1m0 1h1'/>"
       f"<path class='sa-b2' stroke='#213' d='M{PX - 10} {CHY + 2}.5h2'/>"
       f"<path fill='#213' d='M{PX - 8} {CHY + 2}h3v2h-3z'/><path stroke='#fc3' d='M{PX - 5} {CHY + 2}.5h1'/>"
-    + runs(BOH, {"m": "#cbd", "k": "#213", "n": "#f9a", "d": "#768"}, PX - 10, CHY + 4) + "</g>"
+    + "<g class='sa-bo'>" + runs(BOH, {"m": "#cbd", "k": "#213", "n": "#f9a", "d": "#768"}, PX - 12, CHY + 4) + "</g></g>"
     # soot sprites with star candy
     + "<defs><g id='sa-s'>" + runs(SOOT, {"k": "#112", "w": "#fff"}, 0, PT - 5) + "</g></defs>"
     + soot(0, PX + 43, "#f9a") + soot(3, PX + 50, "#fe6") + soot(5, PX + 57, "#8ef")
-    # the hopping lantern: post, cap, glowing lamp, and the white-gloved hand it stands on
-    + f"<g class='sa-j' style='--d:6'><path fill='{DARK}' d='M{LX} 110h1v22h-1zm-3-8h7v1h-7zm1 7h5v1h-5z'/>"
+    # the hopping lantern: post, cap, glowing lamp, and the white-gloved hand it stands on. In act 2 it hops off the
+    # end of the platform and away down the line, and later hops back (sa-lw)
+    + f"<g class='sa-lw'><g class='sa-j' style='--d:6'><path fill='{DARK}' d='M{LX} 110h1v22h-1zm-3-8h7v1h-7zm1 7h5v1h-5z'/>"
       f"<path fill='#ffe2a0' d='M{LX - 2} 103h5v6h-5z'/><path class='sa-l' fill='#fff' d='M{LX - 1} 104h3v4h-3z'/>"
-      f"<path fill='#fff' d='M{LX - 1} 132h3v2h-3zm3 0h1v1h-1z'/></g>"
+      f"<path fill='#fff' d='M{LX - 1} 132h3v2h-3zm3 0h1v1h-1z'/></g></g>"
 )
+
+
+def held(name, pts, period=240):
+    """@keyframes from [(t_s, x, y)]: each translate holds until the next point (use with steps(1))."""
+    f = lambda v: f"{v}px" if v else "0"
+    out, last = "", None
+    for t, x, y in [(0, 0, 0)] + pts:
+        v = f"translate({f(x)},{f(y)})"
+        if v != last:
+            out += f"{round(t / period * 100, 2):g}%{{transform:{v}}}"
+            last = v
+    return f"@keyframes {name}{{{out}to{{transform:{last}}}}}"
+
+
+# Haku walks in 1px a step with a 1px bob, stands 10 s between two lantern posts, walks back out
+HK = ([(160 + i / 4, -i, -(i % 2)) for i in range(1, 19)] + [(164.75, -18, 0)]
+      + [(175 + i / 4, -18 + i, -(i % 2)) for i in range(1, 19)])
+# the lamp hops 10px at a time (apex 5px up), dropping 2px onto the rails once it is off the platform
+LW = []
+for a, b, t0 in ((0, 90, 190), (90, 0, 206)):
+    s = 1 if b > a else -1
+    for i, x in enumerate(range(a, b, 10 * s)):
+        t, g = t0 + i * .7, (2 if x >= 10 else 0)
+        LW += [(t, x, g), (t + .4, x + 5 * s, -5), (t + .6, x + 10 * s, 2 if x + 10 * s >= 10 else 0)]
 CSS = (
     # twinkles / frame toggles (sa-o hides for half the cycle)
     ".sa-a,.sa-b,.sa-a2,.sa-b2,.sa-q0,.sa-q1{animation:sa-o 5s steps(1) infinite}.sa-b{animation-delay:-2.5s}"
     ".sa-a2,.sa-b2{animation-duration:1.4s}.sa-b2{animation-delay:-.7s}"
     ".sa-q0,.sa-q1{animation-duration:.6s}.sa-q1{animation-delay:-.3s}"
     "@keyframes sa-o{50%{opacity:0}}"
-    ".sa-m0,.sa-m1,.sa-m2{opacity:0;animation:sa-m 23s steps(1) infinite}.sa-m1{animation-duration:31s}.sa-m2{animation-duration:41s}"
+    ".sa-m0,.sa-m1{opacity:0;animation:sa-m 23s steps(1) infinite}.sa-m1{animation-duration:41s}"
     "@keyframes sa-m{40%{opacity:1}70%{opacity:0}}"
     ".sa-l{animation:sa-l 3s steps(3) infinite alternate}@keyframes sa-l{from{opacity:.2}}"
     ".sa-c{opacity:0;animation:sa-c 110s steps(80) infinite}.sa-c2{animation-duration:170s;animation-delay:-60s}"
@@ -872,27 +923,43 @@ CSS = (
     ".sa-p{opacity:0;animation:sa-p 12s calc(var(--d)*-4s) steps(12) infinite}"
     "@keyframes sa-p{20%{opacity:.9}to{transform:translate(24px,-12px);opacity:0}}"
     ".sa-g{animation:sa-g 2.4s steps(1) infinite}.sa-g2{animation-duration:3.6s}@keyframes sa-g{50%{transform:translateX(2px)}}"
-    # moments
-    ".sa-t{animation:sa-t 120s steps(480) infinite}@keyframes sa-t{0%,4%{transform:none}24%,to{transform:translateX(480px)}}"
-    ".sa-r{animation:sa-r 120s steps(78) infinite}@keyframes sa-r{0%,30%{transform:none}66%,to{transform:translateX(78px)}}"
+    # moments, on one 240 s cycle in two acts.
+    # Act 1 (0-120): the train runs through 5-29, River Spirit 29-38, procession 36-80 (No-Face fades 41-55),
+    # Haku the dragon 75-105, Yubaba flies out 106-119. Act 2 (120-240): the train calls at the station 125-168
+    # (stopped 145-153), Haku the boy on the bridge 160-182, the lamp hops away down the line 190-212, Yubaba flies
+    # home 222-236. The ferry comes in 110-168 and leaves 182-239.
+    ".sa-t{animation:sa-t 240s steps(480) infinite}@keyframes sa-t{0%,2%{transform:none}"
+    "12%{transform:translateX(480px);animation-timing-function:steps(1)}"
+    "52.08%{transform:none;animation-timing-function:steps(230)}56.88%{transform:translateX(230px);animation-timing-function:steps(45)}"
+    "58.96%{transform:translateX(275px);animation-timing-function:steps(14)}60.42%,63.75%{transform:translateX(289px);animation-timing-function:steps(14)}"
+    "65.42%{transform:translateX(303px);animation-timing-function:steps(40)}67.08%{transform:translateX(343px);animation-timing-function:steps(137)}"
+    "70%,to{transform:translateX(480px)}}"
+    ".sa-r{animation:sa-r 240s steps(78) infinite}@keyframes sa-r{0%,15%{transform:none}33%,to{transform:translateX(78px)}}"
     ".sa-rb{animation:sa-rb .66s steps(1) infinite}.sa-tb{animation:sa-rb 4s steps(1) infinite}@keyframes sa-rb{50%{transform:translateY(-1px)}}"
-    ".sa-rs{animation:sa-rs 120s steps(18) infinite}@keyframes sa-rs{0%,24.5%,32%,to{transform:none}26.5%,30%{transform:translateY(-18px)}}"
-    ".sa-rf{opacity:0;animation:sa-rf 120s steps(1) infinite}@keyframes sa-rf{24.5%{opacity:1}32%{opacity:0}}"
-    ".sa-yb{animation:sa-yb 120s steps(350) infinite}@keyframes sa-yb{0%,88%{transform:none}99.5%,to{transform:translateX(350px)}}"
+    ".sa-rs{animation:sa-rs 240s steps(18) infinite}@keyframes sa-rs{0%,12.25%,16%,to{transform:none}13.25%,15%{transform:translateY(-18px)}}"
+    ".sa-rf{opacity:0;animation:sa-rf 240s steps(1) infinite}@keyframes sa-rf{12.25%{opacity:1}16%{opacity:0}}"
+    # Yubaba: out left to right, then home right to left (mirrored about x=160 while she is off-canvas)
+    ".sa-yb{animation:sa-yb 240s steps(350) infinite}@keyframes sa-yb{0%,44%{transform:translateX(0) scaleX(1) translateX(0)}"
+    "49.75%{transform:translateX(0) scaleX(1) translateX(350px);animation-timing-function:steps(1)}"
+    "92.5%{transform:translateX(320px) scaleX(-1) translateX(0)}98.25%,to{transform:translateX(320px) scaleX(-1) translateX(350px)}}"
     ".sa-y{animation:sa-y 240s steps(176) infinite}@keyframes sa-y{0%,46%,99.5%,to{transform:translateX(320px)}70%,76%{transform:translateX(144px)}}"
-    ".sa-f{animation:sa-f 120s steps(540) infinite}@keyframes sa-f{0%,62.5%{transform:translateX(320px)}87.5%,to{transform:translateX(-220px)}}"
-    ".sa-fy{animation:sa-fy 120s steps(16) infinite}@keyframes sa-fy{0%,62.5%{transform:none}87.5%,to{transform:translateY(-16px)}}"
+    ".sa-f{animation:sa-f 240s steps(540) infinite}@keyframes sa-f{0%,31.25%{transform:translateX(320px)}43.75%,to{transform:translateX(-220px)}}"
+    ".sa-fy{animation:sa-fy 240s steps(16) infinite}@keyframes sa-fy{0%,31.25%{transform:none}43.75%,to{transform:translateY(-16px)}}"
+    ".sa-hk{animation:sa-hk 240s steps(1) infinite}" + held("sa-hk", HK)
+    + ".sa-lw{animation:sa-lw 240s steps(1) infinite}" + held("sa-lw", LW)
+    + ".sa-lr{animation:sa-lr 240s steps(1) infinite}@keyframes sa-lr{79.33%{opacity:0}88.42%{opacity:1}}" +
+    ".sa-bo{filter:drop-shadow(1px 0 #435) drop-shadow(-1px 0 #435) drop-shadow(0 -1px #435)}"
     ".sa-hb{filter:drop-shadow(0 -1px #3ba) drop-shadow(0 1px #bcd)}"
-    ".sa-hb>*,.sa-hd{animation:sa-w 2.4s calc(var(--d,0)*-.4s) steps(6) infinite alternate}@keyframes sa-w{to{transform:translateY(6px)}}"
+    ".sa-hb>*,.sa-hd{animation:sa-w 2.4s calc(var(--d,0)*-.8s) steps(6) infinite alternate}@keyframes sa-w{to{transform:translateY(6px)}}"
     # idle life
     ".sa-n{animation:sa-n 17s steps(1) infinite}@keyframes sa-n{40%{transform:translateY(1px)}52%{transform:translate(-1px,1px)}66%{transform:none}}"
     ".sa-k{opacity:0;animation:sa-k 4.3s steps(1) infinite}@keyframes sa-k{96%{opacity:1}}"
     ".sa-e{opacity:0;animation:sa-e 17s steps(1) infinite}@keyframes sa-e{52%{opacity:1}66%{opacity:0}}"
     ".sa-v{animation:sa-v 1.8s steps(2) infinite alternate}@keyframes sa-v{to{transform:translateY(2px)}}"
     ".sa-j{animation:sa-j 7s calc(var(--d)*-1s) steps(2) infinite}@keyframes sa-j{3%{transform:translateY(-2px)}6%,to{transform:none}}"
-    ".sa-nf{animation:sa-nf 120s steps(1) infinite}@keyframes sa-nf{34%{opacity:.7}35%,43%{opacity:.35}44%{opacity:.6}45%{opacity:.85}46%{opacity:1}}"
+    ".sa-nf{animation:sa-nf 240s steps(1) infinite}@keyframes sa-nf{17%{opacity:.7}17.5%,21.5%{opacity:.35}22%{opacity:.6}22.5%{opacity:.85}23%{opacity:1}}"
     ".sa-o1,.sa-o2{animation:sa-o 2.4s steps(1) infinite}.sa-o2{animation-delay:-1.2s}"
     ".sa-gz{animation:sa-gz 3s calc(var(--d)*-1.4s) steps(1) infinite}@keyframes sa-gz{45%{transform:translateY(1px)}}"
-    ".sa-h,.sa-x{opacity:0;animation:sa-h 120s steps(1) infinite}@keyframes sa-h{4%{opacity:1}58%{opacity:0}}"
-    ".sa-x{animation-name:sa-x}@keyframes sa-x{83%{opacity:.6}86%{opacity:1}99%{opacity:0}}"
+    ".sa-h,.sa-x{opacity:0;animation:sa-h 240s steps(1) infinite}@keyframes sa-h{11%,69%{opacity:1}40%,95%{opacity:0}}"
+    ".sa-x{animation-name:sa-x}@keyframes sa-x{41.5%,90%{opacity:.6}43%,91.5%{opacity:1}49.5%,99%{opacity:0}}"
 )

@@ -18,7 +18,9 @@ it rests: fins drooped, eye-ports half shut, breathing 1px; 112-116s it stands; 
 right at half the pace and, from the brow of the hill at x=238, down the slope and out of the frame. The
 household greets it as it arrives and sits (32-41s) and sees it off (112-122s): Sophie waves, Markl throws his
 arms up, the Witch wakes, Calcifer flares; steam sighs from under the hull at 38-44s and 112-118s.
-Other moments: birds every 67s, Turnip Head nods every 13s, Markl's disguise slips for 2.5s every 41s.
+Other moments: birds every 67s, Turnip Head nods every 13s, Markl's disguise slips for 2.5s every 41s. Story
+moments on a 360s clock (see STORY): the gust takes the towel and brings it back, the castle wakes and blinks,
+Turnip Head watches the towel and the castle, the Witch smokes a cigar.
 """
 import base64, math, random, struct, zlib
 from lib import Canvas, UNPAINTED, hx
@@ -187,9 +189,9 @@ def draw():
     cv.rect(LP - 2, 127, 4, 1, "#8a5a3c")
     for x in range(LP + 1, TX):
         cv.set(x, ly(x), "#5b4636")
-    for c in CLOTHS:
+    for i, c in enumerate(CLOTHS):
         for (x, y), col in cloth(*c[:5]).items():
-            if y < ly(x) + c[2] - 2:
+            if y < ly(x) + c[2] - 2 and i != TOWEL:      # the towel blows away, so all of it is a sprite
                 cv.set(x, y, col)
         cv.set(c[0], ly(c[0]) - 1, "#8a5a3c")
         cv.set(c[0] + c[1] - 1, ly(c[0] + c[1] - 1) - 1, "#8a5a3c")
@@ -866,6 +868,7 @@ ly = lambda x: round(127 + 3 * (x - LP) / (TX - LP) + 3 * math.sin(math.pi * (x 
 # lilac cloth
 CLOTHS = [(46, 8, 10, "#f3efe4", "#c9c2b4", 3.9), (56, 7, 9, "#4a78c9", "#365aa6", 4.7), (65, 5, 6, PNK, PK2, 3.3),
           (71, 4, 5, LIL, "#8f8fc8", 2.9)]
+TOWEL = 0          # the white sheet, which the gust takes
 
 
 def cloth(x0, w, h, c, s):
@@ -901,12 +904,72 @@ HPAL = {"r": "#8e3a3b", "R": "#6a4a66", "w": "#c3b9ab", "W": "#8f8582", "l": "#f
 # Markl with his disguise slipped: hair, a boy's face, the hood fallen to his shoulders (over MARKL rows 0-10)
 MBOY = ["....nnnn....", "...nnnnnn...", "..vnnnnnnv..", "..vnskskNv..", "..vVssssV...", "..vVssmsVv..",
         "..vVVssVVv..", ".vvvvVVvvvv.", ".vvVvvvvVvv.", ".vvVvvvvVvv.", ".vvvvvvvvvv."]
-# steam sighing out from under the hull as it sits down and stands up: stern, belly, bow
-STEAM = [(139, 101, ["....ww....", "..wwwwww..", ".wwwwwwwww", "wwwwwwwwww", "cwwwwwwwcc", ".cccccccc."]),
-         (176, 109, ["...ww..www..", ".wwwwwwwwwww", "wwwwwwwwwwww", "cwwwwwwwwwwc", ".cccccccccc."]),
-         (213, 101, [".www......", "wwwwww.ww.", "wwwwwwwwww", "cwwwwwwwwc", ".ccwwwwcc.", "...cccc..."])]
+# Steam exhaled from the castle's joints as it sits down and stands up: from the stern joint (blowing back), the
+# belly between the legs and the bow (blowing forward), each a jet that swells into a rising plume, spreads and
+# thins away. Its frames are stacked in a strip inside one clipping viewport (STX, STY, STW x STH); hw-e jumps the
+# strip up a frame at a time, so the whole exhale is a single animated element. Frame 0 is empty.
+STEAM = [(140, 104, -1), (177, 110, 0), (214, 104, 1)]
+STX, STY, STW, STH, STN = 118, 70, 122, 44, 8
+
+
+def steam(k):
+    """{(x, y): colour} for steam frame k (1..STN-1), in world coordinates."""
+    d = {}
+    top, bot = (3, 7, 11, 15, 19, 23, 26)[k - 1], (0, 0, 0, 3, 7, 11, 15)[k - 1]
+    for bx, by, dx in STEAM:
+        for h in range(bot, top + 1):                     # a column widening as it rises, leaning downwind
+            y = by - h
+            if k == 7 and h < (bot + top) // 2:
+                continue                                  # the last of it, a pale wisp at the top
+            w = (1 + h * .45 + math.sin(h * .9 + k * 1.7 + bx) * (h > 3)) * (1, 1, 1, 1, 1, .8, .5)[k - 1]
+            w *= min(1, (top - h + 2) / 4)                # rounded off at the top
+            cx = bx + dx * h * .45 + math.sin(h * .5 + k) * .8
+            for x in range(round(cx - w), round(cx + w) + 1):
+                d[x, y] = WHT if abs(x + .5 - cx) < w - 1.2 and k < 6 else C2
+    return d
 bird = lambda x, y, up: (f"M{x} {y}.5h1m3 0h1m-4 1h3" if up else f"M{x + 1} {y}.5h3m-4 1h1m3 0h1")
 FLOCK = [(900, 60), (909, 64), (917, 58), (926, 65), (934, 61)]
+
+# ---------------------------------------------------------------------------------------------------------
+# Story moments on a 360s clock (two of the castle's visits), in seconds from the theme opening. The castle rests
+# 0-67 and 175-247, walks off 72-126 and 252-306, walks in 135-171 and 315-351.
+#   40.5  the castle blinks awake as a gust sweeps the meadow; 41-50.7 the gust lifts the big white sheet off the
+#         line and sails it up and away over the lake; Turnip Head turns to watch it go; eyes droop at 51
+#   99-108.7 the wind brings the sheet back down onto the line; Turnip Head watches it come
+#   141-156, 321-336 Turnip Head turns to watch the castle stride in from the left
+#   213-241 the Witch of the Waste wakes and smokes a cigar; at 222 the castle blinks awake and watches her
+STORY = 360
+pc = lambda t: f"{t * 100 / STORY:.3f}".rstrip("0").rstrip(".") + "%"
+
+
+def win(cls, spans, inv=False):
+    """CSS: an element shown only during the (on, off) spans of the story clock (inv: hidden only then)."""
+    a, b = ("0", "1") if inv else ("1", "0")
+    return (f".{cls}{{opacity:{b};animation:{cls} {STORY}s steps(1) infinite}}@keyframes {cls}"
+            f"{{{','.join(pc(s) for s, _ in spans)}{{opacity:{a}}}{','.join(pc(e) for _, e in spans)}{{opacity:{b}}}}}")
+
+
+def flight(t, segs, x=0, y=0):
+    """Keyframes for a flight: from (x, y) at time t, segments of (seconds, step dx, step dy, steps), whole-pixel steps."""
+    out = ""
+    for dur, sx, sy, n in segs:
+        out += f"{pc(t)}{{translate:{x}px {y}px;animation-timing-function:steps({n})}}"
+        t, x, y = t + dur, x + sx * n, y + sy * n
+    return out + f"{pc(t)}{{translate:{x}px {y}px;animation-timing-function:steps(1)}}", x, y
+
+
+# the sheet's flight: straight up off the line, then up and away to the left over the lake, out past the mountains
+GUST_OUT = [(.9, 0, -1, 4), (2.4, -1, -2, 8), (2.4, -1, -1, 10), (2.4, -2, -1, 10), (1.6, -3, -1, 8)]
+GUST_BACK = [(1.6, 3, 1, 8), (2.4, 2, 1, 10), (2.4, 1, 1, 10), (2.4, 1, 2, 8), (.9, 0, 1, 4)]
+FLY_OUT, GX, GY = flight(41, GUST_OUT)
+FLY_BACK = flight(99, GUST_BACK, GX, GY)[0]
+# the flying sheet in two flutter frames, billowed like a sail and rippling, local to SHX, SHY
+SHX, SHY = 44, 127
+SHEET_A = ["ssss........ss..", "ssssssss..sssss.", "sssSssssssssSsss", "sssSsssssssSSsss", "ssSSssssssSSssso",
+           "oSSoosssssSoooo.", ".oo...ooSSo....."]
+SHEET_B = [".........ssss...", "ss....sssssssss.", "sssssssssSsssss.", "ssSsssssSSssssso", "sSSssssSSsssssSo",
+           "oSoosssSosssSoo.", "..ooooooo.oSo..."]
+WCX, WCY = CHX + 78, CHY + 16     # the Witch's top-left
 
 SPRITES = (
     # clouds, a flock of birds, lake glints
@@ -933,16 +996,28 @@ SPRITES = (
                    for f, a, dx, dy in (("fin2", "", 4, 12), ("fin2", "", 0, 0), ("fin1", " class='hw-f'", 0, 0)))
          if n == "rear" else "") + part(n, st)
         for n, _, st in PARTS)
-    + "".join(f"<g class='hw-k' style='--k:{k};opacity:calc(1 - var(--w))'><path fill='{FAM['d'][2]}' "
-              f"d='M{CX0 + x + 1} {CY + y + 1}h3v2h-3zm7 1h3v2h-3z'/></g>" for k, x, y in ((3, 43, 28), (2, 50, 47)))
+    # (hw-xh lifts the half-lids when it wakes, hw-x shuts the ports for its blinks)
+    + "".join(f"<g class='hw-k' style='--k:{k};opacity:calc(1 - var(--w))'><path class='hw-xh' fill='{FAM['d'][2]}' "
+              f"d='M{CX0 + x + 1} {CY + y + 1}h3v2h-3zm7 1h3v2h-3z'/><path class='hw-x' fill='{FAM['d'][1]}' "
+              f"d='M{CX0 + x + 1} {CY + y + 1}h3v3h-3zm7 1h3v3h-3z'/></g>" for k, x, y in ((3, 43, 28), (2, 50, 47)))
     + "</g>"
     # steam sighs out from under the hull as the castle sits down and as it stands up (hw-e)
-    + f"<g class='hw-e'>{''.join(strokes(r, {'w': '#fff', 'c': C2}, x, y) for x, y, r in STEAM)}</g>"
+    + f"<svg x='{STX}' y='{STY}' width='{STW}' height='{STH}' opacity='.85'><g class='hw-e'>"
+    + pix({(x - STX, y - STY + k * STH): c for k in range(1, STN) for (x, y), c in steam(k).items()
+           if STX <= x < STX + STW and STY <= y < STY + STH}) + "</g></svg>"
     # Turnip Head's head, nodding now and then; the hems of the washing swaying on the line
     + f"<g class='hw-b'>{img(art(TURNIP[:12], TPAL), TX, TY)}</g>"
-    + "".join(f"<g class='hw-w' style='--t:{c[5]}s;--d:-{i}s'>"
+    + "".join(("<g class='hw-lt'>" + pix({(x, y): v for (x, y), v in cloth(*c[:5]).items() if y < ly(x) + c[2] - 2})
+               if i == TOWEL else "")
+              + f"<g class='hw-w' style='--t:{c[5]}s;--d:-{i}s'>"
               f"{pix({(x, y): v for (x, y), v in cloth(*c[:5]).items() if y >= ly(x) + c[2] - 3})}</g>"
-              for i, c in enumerate(CLOTHS))
+              + ("</g>" if i == TOWEL else "") for i, c in enumerate(CLOTHS))
+    # the sheet in flight: two flutter frames, carried along by hw-ft
+    + "<g class='hw-ft'>" + "".join(
+        f"<g class='hw-o' style='--t:.5s{';--d:-.25s' if f else ''}'>" + pix(
+            {(SHX + x, SHY + y): {"s": CLOTHS[0][3], "S": CLOTHS[0][4], "o": "#958a86"}[ch]
+             for y, row in enumerate(fr) for x, ch in enumerate(row) if ch != "."})
+        + "</g>" for f, fr in ((0, SHEET_A), (1, SHEET_B))) + "</g>"
     # Heen, Sophie and Howl, then their idle life: ribbon, hem, hair, jacket, tail, blinks
     + img(cast(), CHX - 20, CHY)
     + f"<g class='hw-z' style='--t:41s;--d:-20s'>{strokes(MBOY, CPAL, CHX - 19, CHY + 18)}</g>"   # Markl's disguise slips
@@ -956,6 +1031,12 @@ SPRITES = (
       f"<path fill='#3d7f6c' d='M{CHX - 20} {CHY + 22}h1v3h-1zm13 0h1v3h-1z'/>"
       f"<path fill='#f8d3b0' d='M{CHX - 20} {CHY + 20}h1v2h-1zm13 0h1v2h-1z'/>"
       f"<path stroke='#33304a' d='M{CHX + 82} {CHY + 19}.5h1m3 0h1'/></g>"
+    # the Witch wakes and smokes a cigar, the smoke curling up in puffs (hw-ci)
+    + f"<g class='hw-ci'><path stroke='#33304a' d='M{WCX + 4} {WCY + 3}.5h1m3 0h1'/>"
+      f"<path stroke='#5b4636' d='M{WCX + 8} {WCY + 5}.5h4'/><path stroke='#f4623a' d='M{WCX + 12} {WCY + 5}.5h1'/>"
+    # (each puff a white core in a dark slate rim, so it separates from both the pale ridge and the meadow)
+    + "".join(f"<g class='hw-q' style='--d:-{k * 2.4:g}s'><path fill='#676b8a' d='M{WCX + 11 + k % 2} {WCY - 1}h3v1h1v3h-1v1h-3v-1h-1v-3h1z'/>"
+              f"<path fill='#f4f5fa' d='M{WCX + 11 + k % 2} {WCY}h3v2h-1v1h-2z'/></g>" for k in range(2)) + "</g>"
     + f"<path class='hw-o' style='--t:.8s' stroke='#e8607a' d='M{SX + 13} {SY + 3}.5h4'/>"
       f"<path class='hw-o' style='--t:.8s;--d:-.4s' stroke='#e8607a' d='M{SX + 13} {SY + 3}.5h2m0-1h2'/>"
       f"<path class='hw-o' style='--t:1.4s' fill='#365aa6' d='M{SX + 16} {SY + 27}h1v3h-1z'/>"
@@ -1016,10 +1097,23 @@ CSS = (
     ".hw-s path{animation:hw-p 3.6s steps(1) calc(var(--d,0s) - var(--e,0s)) infinite}@keyframes hw-p{33.3%,to{opacity:0}}"
     # moments
     ".hw-d{animation:hw-t 320s steps(1120) infinite}@keyframes hw-t{to{translate:1120px}}"
-    ".hw-b{animation:hw-b 13s steps(1) infinite}@keyframes hw-b{88%{translate:0 1px}94%{translate:none}}"
-    # steam, on the castle's clock: puffs out at 21% (as it sits) and 62% (as it stands), rises 6px and fades
-    ".hw-e{opacity:0;animation:hw-e 180s steps(1) -45s infinite}@keyframes hw-e{21%,62%{opacity:1;translate:none;"
-    "animation-timing-function:steps(6)}24.5%,65.5%{opacity:0;translate:0 -6px}}"
+    "@keyframes hw-b{88%{translate:0 1px}94%{translate:none}}"
+    # story moments (see STORY): Turnip Head turns his head (a mirror about its middle) to watch the towel and
+    # the castle; the towel leaves the line, flies and comes back; the castle wakes and blinks; the Witch smokes
+    f".hw-b{{animation:hw-b 13s steps(1) infinite,hw-u {STORY}s steps(1) infinite;transform-origin:{TX + 9.5}px 0}}"
+    "@keyframes hw-u{" + ",".join(pc(a) for a in (41.5, 98, 141, 321)) + "{scale:-1 1}"
+    + ",".join(pc(b) for b in (52, 109, 156, 336)) + "{scale:1}}"
+    + win("hw-lt", [(41, 108.7)], True)
+    + win("hw-ft", [(41, 50.7), (99, 108.7)]).replace("infinite}", f"infinite,hw-fy {STORY}s infinite}}", 1)
+    + "@keyframes hw-fy{" + FLY_OUT + FLY_BACK + "}"
+    + win("hw-x", [(40.5, 40.8), (41.8, 42.1), (222, 222.3), (223.3, 223.6)])
+    + win("hw-xh", [(40.5, 51), (222, 229)], True)
+    + win("hw-ci", [(213.5, 241)])
+    + ".hw-q{animation:hw-q 4.8s steps(16) var(--d) infinite}@keyframes hw-q{80%{opacity:1}to{translate:0 -16px;opacity:0}}"
+    # steam, on the castle's clock: exhaled at 21% (as it sits) and 62% (as it stands), a frame every 0.6s
+    + ".hw-e{animation:hw-e 180s steps(1) -45s infinite}@keyframes hw-e{" + "".join(
+        f"{(l0 + k * .6) / 1.8:.3f}".rstrip("0").rstrip(".") + f"%{{translate:0 {-(k + 1) * STH if k < STN - 1 else 0}px}}"
+        for l0 in (37.8, 111.6) for k in range(STN)) + "}"
     ".hw-v{animation:hw-v 67s steps(670) infinite}@keyframes hw-v{to{translate:-1340px -40px}}"
     ".hw-c{animation:hw-c 1.6s steps(1) infinite}@keyframes hw-c{25%{translate:1px -1px}50%{translate:0 -3px}75%{translate:-1px -1px}}"
     ".hw-r{opacity:0;animation:hw-r 180s steps(1) -45s infinite}@keyframes hw-r{18%,62.5%{opacity:1}23%,68%{opacity:0}}"

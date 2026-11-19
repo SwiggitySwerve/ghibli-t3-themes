@@ -7,9 +7,11 @@ the ladies of the Himawari house watch it all from their window.
 Static layer (PNG): storm sky, cloud banks, far sea, headland + road + tunnel, house, fence, bucket,
 the care home with its sunflower sign and the three ladies.
 Sprites, back to front: lightning, scud, the ship (pitching, with Koichi's lamp and beam) and the
-strip of sea in front of its hull, car (clipped at the tunnel by a nested <svg>), flag, the ladies'
+strip of sea in front of its hull, car (clipped at the tunnel by a nested <svg>), the wave that bursts
+over the sea wall as it passes, flag, the ladies'
 idle bits, Sosuke + lamp, the fence rail redrawn over him, Fujimoto riding a swell in, back wave
-row (Sosuke's toy boat adrift in one of its troughs), main wave row (blinking eyes, Granmamare gliding on her back inside its water, the
+row (Sosuke's toy boat adrift in one of its troughs), main wave row (blinking eyes, Granmamare gliding on her back inside its water
+with rings of gold light, Fujimoto's crab-legged submarine rising where he went under, the
 sisters swimming and riding in it, three more leaping beside Ponyo, Ponyo on top), front wave row
 (a Devonian fish and three jellyfish in its water).
 Each wave row is a transparent PNG strip drawn twice and scrolled by one period.
@@ -905,6 +907,179 @@ def rim():
     return img(cv, x0, y0, cls("po-t"))
 
 
+def sheet_svg(frames, x, y, name):
+    """Frames (equal-size Canvases) stacked into one image behind a nested <svg> window; the class
+    steps the image up one frame at a time."""
+    w, h = frames[0].w, frames[0].h
+    cv = Canvas(w, h * len(frames))
+    for i, f in enumerate(frames):
+        cv.px[i * h:(i + 1) * h] = [row[:] for row in f.px]
+    return cv, f"<svg x='{x}' y='{y}' width='{w}' height='{h}'>{img(cv, attr=cls(name))}</svg>"
+
+
+BURST = 70, 62, 38, 40           # the sea-wall burst's window on screen: x, y, w, h
+FOAM, SPRAY, WATER = "#eef6f0", "#9fcbe0", "#5a92dc"
+
+
+def burst():
+    """A wave breaking over the sea wall just ahead of Lisa's car: it heaves up behind the wall, towers,
+    bursts, rains down across the road and drains away. Frame 0 is empty (parked)."""
+    X0, Y0, w, h = BURST
+    steps = [
+        ([(88, 100, 7), (91, 96, 5), (86, 95, 4)], [], []),
+        ([(88, 100, 8), (89, 94, 6), (90, 88, 5), (88, 83, 4), (91, 81, 3)], [(85, 78), (94, 77), (89, 76)], []),
+        ([(88, 100, 8), (89, 93, 6), (89, 86, 5), (87, 80, 5), (92, 77, 4), (86, 74, 4), (90, 71, 3)],
+         [(82, 71), (97, 70), (80, 75), (99, 74), (85, 67), (93, 66), (89, 64)], []),
+        ([(88, 100, 7), (89, 93, 5), (88, 87, 4), (82, 79, 5), (95, 78, 5), (77, 76, 4), (100, 75, 3), (88, 75, 4)],
+         [(74, 70), (103, 69), (79, 67), (97, 66), (88, 66), (72, 74), (105, 73), (84, 69)], []),
+        ([(88, 100, 6), (88, 95, 4), (80, 85, 3), (96, 85, 3), (74, 84, 2.5), (102, 84, 2.5), (88, 84, 2.5)],
+         [(72, 76), (105, 77), (78, 74), (99, 73), (86, 75), (92, 77), (75, 79), (101, 80), (83, 79), (94, 80),
+          (80, 77), (97, 76)], [(76, 87, 24)]),
+        ([], [(73, 82), (104, 81), (80, 80), (96, 80), (89, 82), (84, 83)],
+         [(72, 86, 10), (84, 85, 9), (95, 86, 10), (75, 88, 26)]),
+        ([], [(76, 91), (93, 92), (101, 91), (84, 93)], [(74, 89, 6), (85, 89, 4), (93, 89, 8)]),
+    ]
+    frames = [Canvas(w, h)]
+    for n, (circles, drops, sheets) in enumerate(steps):
+        f = Canvas(w, h)
+        # how far inside the plume a point is (> 0 inside); the billows' rims are ragged into spray
+        depth = lambda x, y: max([r - math.hypot(x + .5 - cx, y + .5 - cy) for cx, cy, r in circles] + [-9])
+        inside = lambda x, y: depth(x, y) > 0
+        for y in range(Y0, Y0 + h):
+            for x in range(X0, X0 + w):
+                d, hsh = depth(x, y), (x * 7 + y * 11 + n * 5) % 9
+                if d > 0 and not (d < 1.2 and hsh < 3 and y < 96):
+                    c = FOAM
+                    if y >= 98:
+                        c = SPRAY if (x + y) % 2 else FOAM    # the sheet of water climbing the wall
+                    elif inside(x, y - 1) and (not inside(x + 1, y + 1) or not inside(x + 2, y + 2)):
+                        c = SPRAY                          # shade on the lower right of each billow
+                    f.set(x - X0, y - Y0, c)
+                elif -2.2 < d < -1 and hsh == 0 and y < 96:
+                    f.set(x - X0, y - Y0, FOAM)            # droplets flung off the rim
+        if n < 4:                                          # the wave slamming the foot of the wall, spreading along it
+            for y in range(99, 102):
+                half = 6 + 4 * n - 2 * (101 - y)
+                for x in range(88 - half, 89 + half):
+                    if (x + y) % 3 or y == 101:
+                        f.set(x - X0, y - Y0, FOAM if (x * 3 + y) % 4 else SPRAY)
+        for x, y in drops:
+            f.set(x - X0, y - Y0, FOAM)
+            f.set(x - X0, y - Y0 + 1, SPRAY)
+        for x, y, n in sheets:                             # foam sheeting across the road
+            f.rect(x - X0, y - Y0, n, 1, FOAM)
+            f.rect(x - X0 + 1, y - Y0 + 1, n - 2, 1, SPRAY)
+        frames.append(f)
+    return sheet_svg(frames, X0, Y0, "po-B")[1]
+
+
+SUBX, SUBY = 232, 115            # Fujimoto's submarine: its image's top-left on screen when surfaced
+SG = 3                           # width of the lit water around it
+
+
+def submarine():
+    """Fujimoto's crab-legged submarine, nose to the left: a brass hull with a rivet band, a big round
+    viewport at the nose with Fujimoto's red hair inside, a little dome on top, tail fins and a
+    screw; four jointed crab legs under it that paddle in two frames. Returns the hull (with the lit
+    water around hull and legs) and the legs' two-frame sheet."""
+    lt, mid, sh, dk, gold = "#d89a62", "#9a5a36", "#64361f", "#2a1612", LAMP
+    trim = "#3ec8b4"                                           # blue-green trim, apart from the tan Devonian fish
+    w, h = 40 + 2 * SG, 24 + 2 * SG
+    hull, legs = Canvas(w, h), [Canvas(w, h), Canvas(w, h)]
+    cx, cy = 17, 9
+    inside = lambda x, y: (((x + .5 - cx) / (15 if x < cx else 20)) ** 2 + ((y + .5 - cy) / 6) ** 2 <= 1
+                           or math.hypot(x + .5 - 21, y + .5 - 4) <= 3 and y < 5)
+    put = lambda cv, x, y, c: cv.set(x + SG, y + SG, c)
+    for y in range(0, 17):
+        for x in range(0, 38):
+            if inside(x, y):
+                c = mid
+                if not inside(x, y - 1):
+                    c = lt
+                elif not inside(x, y + 1):
+                    c = dk
+                elif y >= 13 or (y >= 11 and x > 30):
+                    c = sh
+                if y == 9 and x % 3 == 0 and 12 < x < 34:
+                    c = trim                                   # rivet band
+                put(hull, x, y, c)
+    for x, y in [(34, 4), (35, 3), (36, 2), (37, 1), (35, 4), (36, 3), (36, 4), (37, 2),   # tail fins
+                 (34, 14), (35, 14), (36, 15), (35, 15), (37, 16)]:
+        put(hull, x, y, trim)
+    for y in (7, 8, 10, 11):                                   # screw
+        put(hull, 38, y, dk)
+    put(hull, 21, 2, gold)                                     # lit window in the dome
+    put(hull, 22, 2, gold)
+    for y in range(3, 15):                                     # the viewport, and Fujimoto at it
+        for x in range(2, 14):
+            d = math.hypot(x + .5 - 8, y + .5 - 9)
+            if d <= 4.6:
+                put(hull, x, y, dk if d > 3.5 else "#bfe9e4")
+    for x, y, c in [(6, 7, "#fff6ea"), (7, 8, "#f2d6c0"), (7, 9, "#f2d6c0"), (8, 7, "#9c2c30"), (9, 7, "#c8483c"),
+                    (10, 7, "#9c2c30"), (8, 8, "#c8483c"), (9, 8, "#9c2c30"), (10, 8, "#c8483c"), (11, 8, "#9c2c30"),
+                    (9, 9, "#9c2c30"), (10, 9, "#c8483c"), (9, 10, "#9c2c30"), (11, 9, "#9c2c30"), (8, 9, "#22306a"),
+                    (8, 10, "#22306a")]:
+        put(hull, x, y, c)
+    # crab legs: hip under the hull, knee out and down, tip down; even legs reach while odd legs push
+    for f, cv in enumerate(legs):
+        for i, hx_ in enumerate((10, 16, 22, 28)):
+            a, b = ((-3, -2), (2, 2))[(i + f) % 2]
+            pts = [(hx_, 14), (hx_ + a, 17), (hx_ + a + b, 21)]
+            for (xa, ya), (xb, yb) in zip(pts, pts[1:]):
+                n = max(abs(xb - xa), abs(yb - ya))
+                for k in range(n + 1):
+                    put(cv, round(xa + (xb - xa) * k / n), round(ya + (yb - ya) * k / n), sh)
+            put(cv, *pts[1], lt)                               # the knee joint catches the light
+            put(cv, *pts[2], dk)
+    ring = [(x, y) for y in range(h) for x in range(w)
+            if hull.get(x, y) != UNPAINTED or any(l.get(x, y) != UNPAINTED for l in legs)]
+    for d in range(1, SG + 1):                                 # the lit water, growing outward
+        grown = []
+        for x, y in ring:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) + (((1, 1), (-1, -1), (1, -1), (-1, 1)) if d % 2 else ()):
+                q = (x + dx, y + dy)
+                if 0 <= q[0] < w and 0 <= q[1] < h and hull.get(*q) == UNPAINTED:
+                    hull.set(*q, "#9eeaf0" if d < 3 else "#62cfe8")
+                    grown.append(q)
+        ring = grown
+    for cv in legs:                                            # the legs show through the glow
+        for y in range(h):
+            for x in range(w):
+                if cv.get(x, y) != UNPAINTED and hull.get(x, y) in (hx("#9eeaf0"), hx("#62cfe8")):
+                    hull.set(x, y, UNPAINTED)
+    return (img(hull, SUBX, SUBY, alpha={hx("#9eeaf0"): 110, hx("#62cfe8"): 60})
+            + sheet_svg(legs, SUBX, SUBY, "po-Y")[1])
+
+
+RINGS = [(17, 9, "#fff2b8", 255), (20, 10, "#ffe9a0", 220), (23, 11, "#ffe090", 160)]
+
+
+def rings():
+    """Rings of gold light spreading through the water from Granmamare's head, one after another, then
+    a pause. Clipped to the lit water around her, so they never cross her or the fish nearer than her.
+    Returns the window, in her image's place before she moves."""
+    cx, cy = GM + 17, GM + 12
+    W2, H2 = max(r[0] for r in RINGS), max(r[1] for r in RINGS)
+    w, h = 2 * W2 + 3, 2 * H2 + 3
+    glow = {hx("#9eeaf0"), hx("#62cfe8")}
+    frames, alpha = [], {}
+    for rx, ry, c, a in RINGS:
+        f = Canvas(w, h)
+        for i in range(1440):
+            t = math.pi * i / 720
+            for x in {round(W2 + 1 + rx * math.cos(t)), round(W2 + 1 + (rx - 1) * math.cos(t))}:   # two pixels thick at the sides
+                y = round(H2 + 1 + ry * math.sin(t))
+                gx, gy = cx - W2 - 1 + x, cy - H2 - 1 + y
+                if 0 <= gx < GOD.w and 0 <= gy < GOD.h and GOD.get(gx, gy) in glow:
+                    f.set(x, y, c)
+        frames.append(f)
+        alpha[hx(c)] = a
+    frames.append(Canvas(w, h))
+    cv, _ = sheet_svg(frames, 0, 0, "po-Q")
+    return (f"<svg x='{W + cx - W2 - 1}' y='{GODY + cy - H2 - 1}' width='{w}' height='{h}'>"
+            f"{img(cv, attr=cls('po-Q'), alpha=alpha)}</svg>")
+
+
 TR = track()
 FEET0 = MAIN_Y + MAIN_WY - TR[0]                 # feet row on screen at t=0
 SWELL, RIDE = swell(), 108                       # Fujimoto's fish; how far it carries him in, and sinks
@@ -939,8 +1114,11 @@ SPRITES = (
     f"<svg width='{TUN + 1}' height='99'><g class='po-v'>{img(art(CAR, CPAL), TUN + 1, 80)}"
     f"<path class='po-A' fill='{SKIN}' d='M{TUN + 10} 79h1v2h-1z'/></g></svg>"
     # its headlights coming up the tunnel just before it comes out
-    f"<path class='po-H' fill='#fff0a0' d='M{TUN + 2} 84h2v1h-2z'/>"    # the power cut: the house's windows go dark, then the generator brings them back
-    + blackout() +
+    f"<path class='po-H' fill='#fff0a0' d='M{TUN + 2} 84h2v1h-2z'/>"
+    # once a cycle a wave breaks over the sea wall just as the car reaches it
+    + burst() +
+    # the power cut: the house's windows go dark, then the generator brings them back
+    blackout() +
     # the flag's fly end snapping in the wind
     f"<path class='po-3' fill='{ROOF}' d='M156 {GY - 36}h2v1h-2z'/>"
     # the ladies: a waving hand, and Toki's glasses as she looks about
@@ -962,7 +1140,10 @@ SPRITES = (
     # pass behind her (so nothing crosses her face) and show through the lit water around her; the
     # front row will pass in front of her lower hair
     # (her halo lies behind her: through her glow, never across her throat)
-    f"<g class='po-G'>{halo()}{img(GOD, W, GODY, alpha=GODA)}</g>"
+    # (rings of gold light spread from her head through the water ahead of her)
+    f"<g class='po-G'>{halo()}{img(GOD, W, GODY, alpha=GODA)}{rings()}</g>"
+    # Fujimoto's submarine rises where he went under, hangs there paddling, and dives away
+    f"<g class='po-U'>{submarine()}</g>"
     # one sister ahead of Ponyo and two behind, each on her path; then Ponyo herself: a nested svg
     # windows one frame of her sheet
     # (Ponyo throws her own spray as she lands)
@@ -1040,7 +1221,9 @@ CSS = (
     ".po-o{animation:po-u 1.5s steps(3) infinite alternate}"
     + splash_css() +
     # Granmamare glides right to left through the main row's water, then stays parked far off-canvas
-    f".po-G{{animation:po-G {GODRUN}s 75s steps({GODRUN * 8}) infinite}}@keyframes po-G{{to{{translate:-{GODRUN * 8}px}}}}"
+    # (parked 20 px further right, so her rings stay off-canvas too, and started 2.5 s sooner to match)
+    f".po-G{{translate:20px;animation:po-G {GODRUN}s 72.5s steps({GODRUN * 8}) infinite}}"
+    f"@keyframes po-G{{from{{translate:20px}}to{{translate:{20 - GODRUN * 8}px}}}}"
     # Fujimoto: in from off-canvas right at 1 px every other tick, a pause, straight down at 1 px a tick
     # (a 100 s loop, so each leg starts on a whole tick: 1 s, 14.5 s, 17.5 s. He is on screen from 40 s
     # to 63 s of every 100; Granmamare, every 200 s from 75 s to 138 s, always falls between his visits)
@@ -1067,4 +1250,18 @@ CSS = (
     # the lamps talk in Morse, one unit = 5 ticks: the house sends BAKA, the ship answers LOVE
     ".po-l,.po-m{opacity:0;filter:drop-shadow(0 0 2px #fe6);animation:po-l 31.25s steps(1) infinite}"
     ".po-m{animation-name:po-m}" + morse_css("po-l", "BAKA", 0) + morse_css("po-m", "LOVE", 50)
+    # the sea-wall burst: seven frames of 6 ticks from 8 s of every 200, as the car (out of the tunnel
+    # at 5 s) reaches it
+    + f".po-B{{animation:po-B 200s steps(1) infinite}}@keyframes po-B{{"
+    + "".join(f"{(8 + .375 * k) / 2:g}%{{translate:0 -{BURST[3] * (k + 1)}px}}" for k in range(7))
+    + f"{(8 + .375 * 7) / 2:g}%{{translate:0 0}}}}"
+    # the submarine: up from the deep at 164 s of every 200 (just after Fujimoto's second ride ends,
+    # where he went under), surfaced from 170 s to 180 s, then diving off to the right by 186 s;
+    # a pixel every other tick, fading in on the way up and out on the way down
+    ".po-U{opacity:0;translate:0 48px;animation:po-U 200s infinite}"
+    "@keyframes po-U{0%,82%{opacity:0;translate:0 48px;animation-timing-function:steps(48)}"
+    "85%,90%{opacity:1;translate:0 0;animation-timing-function:steps(48)}93%,to{opacity:0;translate:48px 48px}}"
+    f".po-Y{{animation:po-Y .75s steps(2) infinite}}@keyframes po-Y{{to{{translate:0 -{2 * (24 + 2 * SG)}px}}}}"
+    # Granmamare's rings: three spreading, then a pause
+    f".po-Q{{animation:po-Q 2.5s steps(4) infinite}}@keyframes po-Q{{to{{translate:0 -{4 * (2 * RINGS[-1][1] + 3)}px}}}}"
 )

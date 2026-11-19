@@ -264,6 +264,24 @@ FALLEN = [                  # a robot long dead: its bullet head on its side, do
 ]
 
 
+HAND = [                    # beside it, a mechanical hand reaching up out of the grass: three jointed fingers splayed open,
+    "o..o..c.",             # a palm, a ringed wrist and forearm, moss and grass climbing it
+    "o..b..cd",
+    "ob.b.ccd",
+    ".obbbcd.",
+    ".obgbcd.",
+    ".okkkkd.",
+    "..obcd..",
+    "..obcm..",
+    "..kkkk..",
+    "..obcd..",
+    ".gobcdm.",
+    ".GgbcGgm",
+    "gGgGgGgm",
+]
+CHIPS = [(17, 144, 2, 2), (21, 148, 2, 2), (25, 150, 3, 2), (8, 150, 2, 1)]   # volucite in the ruin and the block
+
+
 def knoll(x):
     return GY + int(.0003 * (x - 72) ** 2)
 
@@ -292,6 +310,9 @@ def middle():
     cv.paint(COLUMN, RUIN, 15, knoll(20) - 13)
     cv.paint(BLOCK, RUIN, 4, knoll(8) - 3)
     cv.paint(FALLEN, RUIN, 211, knoll(219) - 7)
+    cv.paint(HAND, RPAL, 230, knoll(234) - 12)
+    for x, y, w, h in CHIPS:                      # volucite chips, pale by day (they glow after dark, see lights)
+        cv.rect(x, y, w, h, "#a8dce8")
     return cv
 
 
@@ -385,6 +406,9 @@ def island():
     for x, y, dx, n in [(cx - 6, 27, -1, 7), (cx + 5, 27, 1, 7), (cx - 3, 24, -1, 4), (cx + 2, 24, 1, 4)]:
         for i in range(n):
             cv.set(x + dx * i, y - i // 2, WD[1])
+    # bright lips where the two streams pour over the foot of the lowest ring (see stream())
+    cv.paint(["lwwwwl", "wwwwww"], {"w": C[0], "l": S[6]}, 30, 61)
+    cv.paint(["lwwl", "wwwl"], {"w": S[6], "l": S[5]}, 69, 61)
     return cv
 
 
@@ -605,6 +629,33 @@ FOX = [
 ]
 XPAL = {"o": "#f0a850", "e": "#c87830", "t": "#f0a850", "T": "#c87830", "k": INK, "w": C[0]}
 BPAL = {"w": "#ffffff", "k": "#3c4a78"}
+PERCH = [                   # the nest's bird, a little bluebird, perched facing right
+    "...bb.",
+    "..bkbY",
+    ".Bbbww",
+    "BB.ww.",
+]
+GLIDE = [                   # the same bird gliding, wings raised
+    "..B.....",
+    "..BB....",
+    "...BB.bb",
+    "BBbbbbkY",
+    "...www..",
+]
+DPAL = {"b": "#4a70c8", "B": "#2c3e7c", "w": "#ffffff", "Y": "#ffcc44", "k": INK}
+BX, BY = 19, 136                     # the bird on its nest; on the robot's forearm it is 53 px right, 16 up
+
+
+def stream(n):
+    """Water spilling off the island's lowest ring, n px wide (lit left, shaded right): a broken 6 px pattern of
+    streaks, with gaps so it reads as falling water rather than a cord."""
+    pal = {"w": C[0], "l": S[6], "d": S[4]}
+    return art([r[-n:] for r in ["wwl.", "wwld", "lw.d", "wl.l", ".wwl", "wlwd"]] * 5, pal)
+
+
+# spray blooming where each stream meets the cloud: it fans out at the foot (the cloud in front hides its base)
+MIST = art(["...w.w...", "..wlwlw..", ".wwlwwwl.", "wlwwwwlww", ".wwwwwww.", "lwwwlwwwl"],
+           {"w": C[0], "l": C[1]})
 
 
 def moth():
@@ -707,7 +758,9 @@ LAYERS = [
     # --- far, behind the cumulus: the Goliath (with searchlights after dark), lightning in the Dragon's Nest,
     #     a cloud streak
     ("goliath", "<g class='lp-go'>" + img(art(GOLIATH, OPAL), -90, 64)
-     + "<path class='lp-N' fill='#ffd' fill-opacity='.22' d='M-63 75h2l1 22h-7zm40 0h2l4 22h-7z'/></g>"),
+     # its two searchlights sweep slowly to and fro, out of step
+     + "<g class='lp-N' fill='#ffd' fill-opacity='.22'><path class='lp-sw' style='transform-origin:-62px 75px' d='M-63 75h2l3 22h-8z'/>"
+       "<path class='lp-sw' style='transform-origin:-22px 75px;animation-delay:-11s' d='M-23 75h2l3 22h-8z'/></g></g>"),
     ("lightning", f"<path class='lp-bo' stroke='#dde' stroke-opacity='.5' d='{oval(68, 51, 10, 4)}'/>"
                   "<path class='lp-bo' stroke='#fff' d='M64 47.5h2m-2 1h2m-3 1h2m-3 1h2m-3 1h4m-2 1h2m-3 1h2m-3 1h2m-2 1h1m-2 1h1"
                   "m13-11h2m-3 1h2m-3 1h3m-2 1h1m-2 1h1'/>"),
@@ -724,6 +777,10 @@ LAYERS = [
     #     gulls wheeling round the crown go with it: two groups on one eight-point orbit, half a lap apart.
     #     They roost after dark (lp-R) and stay down until Pazu's doves have crossed at dawn
     ("island", "<g class='lp-o'><g class='lp-i'>" + img(island(), IX, IY)
+     # water spilling off the lowest ring, down past the dark underside into the cloud (a window onto a moving strip)
+     + "".join(f"<svg x='{IX + x}' y='{IY + 63}' width='{w}' height='{n}'>{img(stream(w), 0, -6, cls)}</svg>"
+               for x, w, n, cls in ((31, 4, 22, " class='lp-wf'"), (70, 3, 18, " class='lp-wf' style='animation-delay:-.5s'")))
+     + f"<g class='lp-ms'>{img(MIST, IX + 29, IY + 74)}{img(MIST, IX + 67, IY + 71)}</g>"
      + "<g class='lp-R'><g class='lp-e'>" + img(flock([(0, 0), (9, -4)]), 243, 28, " class='lp-q'") + "</g>"
      "<g class='lp-e' style='animation-delay:-9.5s'>" + img(flock([(6, -2)]), 256, 42, " class='lp-q'") + "</g></g></g></g>"),
     # --- cloud lapping the island's lower left (Laputa is rising out of the cumulus), and a drifting puff
@@ -752,13 +809,15 @@ LAYERS = [
     ("trumpet", f"<g class='lp-tp'><path fill='#fffaf0' d='M{PX + 2} {KY + 12}h2v3h-2zM{TX + 2} {KY + 9}h1v1h1v2h-2z'/>"
      f"<path fill='#f8cfa0' d='M{PX + 2} {KY + 15}h2v1h-2zM{TX + 1} {KY + 8}h2v1h-2z'/>"
      # the trumpet: a 3 px flared bell, a darker underside (broken by his hand) and a valve
-     f"<path fill='gold' d='M{TX - 6} {KY + 5}h1v1h1v1h11v1h-13z'/>"
-     f"<path fill='darkgoldenrod' d='M{TX - 6} {KY + 8}h7v1h-7zm9 0h3v1h-3zm-2-2h1v1h-1z'/></g>"),
+     f"<path fill='gold' d='M{TX - 6} {KY + 5}h1v1h1v1h11v1h-13zm5-1h1v1h-1z'/>"
+     f"<path fill='darkgoldenrod' d='M{TX - 6} {KY + 8}h7v1h-7zm9 0h3v1h-3zm-2-2h1v1h-1zM{TX - 6} {KY + 9}h1v1h-1z'/></g>"),
     # --- the robot: its head nods to her, the fox-squirrel runs from shoulder to head
     ("robot", img(art(BODY, RPAL), RX, RY + 11) + "<g class='lp-h'>" + img(art(HEAD, RPAL), HXA, HYA)
      + "</g>" + img(art(FOX, XPAL), RX + 43, RY + 8, " class='lp-u'")),
-    # --- small life on the knoll: the nest's bird hops, two butterflies
-    ("knoll life", "<g class='lp-j'><path fill='#fff' d='M20 137h2v1h2v2h-3v-1h-1z'/><path fill='#fc4' d='M19 138h1v1h-1z'/></g>"
+    # --- small life on the knoll: the nest's bird (it hops, and flies over to perch on the robot's arm until the
+    #     fox-squirrel lands there), two butterflies
+    ("knoll life", f"<g class='lp-bd' style='transform-origin:{BX + 3}px {BY + 2}px'><g class='lp-j'>"
+     + img(art(PERCH, DPAL), BX, BY, " class='lp-bp'") + "</g>" + img(art(GLIDE, DPAL), BX - 1, BY - 2, " class='lp-bg'") + "</g>"
      + "".join(f"<g class='lp-m'{d}><path class='lp-n' fill='{c}' d='M{x} {y}h1v1h1v1h-1v-1h-1z'/></g>"
                for x, y, c, d in ((22, 146, "#fc4", ""), (204, 151, "#f8a", " style='animation-delay:-2s'")))),
     # --- night: a multiply wash over everything, and a warm one at dusk and dawn (both change only then)
@@ -772,7 +831,13 @@ LAYERS = [
                # the moon's craters and its shaded lower limb
                "<path stroke='#dda' d='M102 33.5h2m1 3h1m-6 2h2M109.5 33v5m-1 0v2M106 40.5h2m-7 1h5'/>"
                # volucite in the ruin's stones, waking when the crystal glows by night (Uncle Pom's mine)
-               "<path class='lp-z' stroke='#8ef' d='M20 144.5h1m1 4h1m-5 2h1m-10 1h1'/>"
+               # steady through the night, flaring with a halo when the crystal glows
+               "<path fill='#6ce' d='" + "".join(f"M{x} {y}h{w}v{h}h-{w}z" for x, y, w, h in CHIPS) + "'/>"
+               "<g class='lp-z'><path fill='#8ef' fill-opacity='.3' d='"
+               + "".join(f"M{x - 1} {y - 1}h{w + 2}v{h + 2}h-{w + 2}z" for x, y, w, h in CHIPS) + "'/>"
+               "<path fill='#cff' d='" + "".join(f"M{x} {y}h{w}v{h}h-{w}z" for x, y, w, h in CHIPS) + "'/></g>"
+               # and the fallen robot's empty eye stirs with it
+               "<path class='lp-z' stroke='#f53' d='M217 155.5h2'/>"
                # the crystal's beam pointing the way to Laputa: once a cycle, faint (see beam())
                f"<path class='lp-v' stroke='#aff' stroke-opacity='.35' d='{beam()}'/></g>"
                # a soft glow where the roots cradle the great crystal under the island: a static shape, lit with the
@@ -788,6 +853,28 @@ LAYERS = [
      f"<path class='lp-g' fill='#fff' d='M{CX} {CY}h1v1h-1z'/>"),
 ]
 SPRITES = "".join(chunk for _, chunk in LAYERS)
+
+
+def keys(name, pts):
+    """@keyframes on the 240 s cycle from (t seconds, x, y, mirrored, steps): each pose holds from t (the element runs
+    steps(1)), unless `steps` is given, when it moves to the next pose in that many whole steps."""
+    out = ""
+    for t, x, y, m, n in pts:
+        tr = f"translate({x}px,{y}px)" + ("scaleX(-1)" if m else "")
+        out += f"{round(t / 2.4, 3):g}%{{transform:{tr}" + (f";animation-timing-function:steps({n})" if n else "") + "}"
+    return f"@keyframes {name}{{{out}}}"
+
+
+# the fox-squirrel: runs along the robot's shoulders, leaps to its forearm (scaring off the bird) and on to Sheeta's
+# head, rides there through the night, comes home after dawn, and once pops up onto the robot's head
+FOXK = keys("lp-u", [(0, 0, 0, 0, 0), (34, 0, 0, 0, 10), (36, -30, 0, 0, 0), (36.25, -35, 5, 0, 0), (36.5, -39, 19, 0, 0),
+                     (38, -46, 14, 0, 0), (38.25, -54, 19, 0, 0), (198, -54, 19, 1, 0), (198.25, -46, 14, 1, 0),
+                     (198.5, -39, 19, 1, 0), (200, -35, 5, 1, 0), (200.25, -30, 0, 1, 10), (202.25, 0, 0, 1, 0),
+                     (203, 0, 0, 0, 0), (226, 0, 0, 0, 4), (227, -16, -12, 0, 0), (231, -16, -12, 0, 4), (232, 0, 0, 0, 0)])
+# the nest's bird: on the robot's forearm at the start of the cycle; flies home when the fox lands there (36.5 s),
+# and back out to the arm once the fox is home again (212 s)
+BIRDK = keys("lp-bd", [(0, 53, -16, 0, 0), (36.5, 53, -16, 1, 10), (39, 26, -26, 1, 10), (41.5, 0, 0, 1, 0),
+                       (212, 0, 0, 0, 10), (214.5, 26, -28, 0, 10), (217, 53, -16, 0, 0), (240, 53, -16, 0, 0)])
 
 CSS = (
     # ambient loops, on a half-second grid
@@ -807,7 +894,14 @@ CSS = (
     ".lp-k{opacity:0;animation:lp-k 6s steps(1) infinite}@keyframes lp-k{96%{opacity:1}}"
     ".lp-l{opacity:0;animation:lp-l 14s steps(1) infinite}@keyframes lp-l{50%{opacity:1}75%{opacity:0}}"
     ".lp-h{animation:lp-h 17s steps(1) infinite}@keyframes lp-h{55%{transform:translate(-1px,1px)}70%{transform:none}}"
-    ".lp-u{animation:lp-u 23s steps(4) infinite}@keyframes lp-u{60%,94%{transform:none}64%,90%{transform:translate(-16px,-12px)}}"
+    ".lp-u{transform-origin:114px 102.5px}.lp-u,.lp-bd{animation:lp-u 240s steps(1) infinite}.lp-bd{animation-name:lp-bd}"
+    + FOXK + BIRDK +
+    ".lp-bg{opacity:0;animation:lp-bg 240s steps(1) infinite}@keyframes lp-bg{15.208%{opacity:1}17.292%{opacity:0}88.333%{opacity:1}90.417%{opacity:0}}"
+    ".lp-bp{animation:lp-bp 240s steps(1) infinite}@keyframes lp-bp{15.208%{opacity:0}17.292%{opacity:1}88.333%{opacity:0}90.417%{opacity:1}}"
+    # the island's water, 2 px a half-second; the Goliath's searchlights sweep 28 degrees in 22 s
+    ".lp-wf{animation:lp-wf 1.5s steps(3) infinite}@keyframes lp-wf{to{transform:translateY(6px)}}"
+    ".lp-ms{animation:lp-ms 2s steps(2,jump-none) infinite alternate}@keyframes lp-ms{to{transform:translateY(-1px)}}"
+    ".lp-sw{animation:lp-sw 22s steps(22) infinite alternate}@keyframes lp-sw{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}"
     ".lp-j{animation:lp-j 4s steps(1) infinite}@keyframes lp-j{75%{transform:translateY(-1px)}}"
     ".lp-m{animation:lp-m 6s steps(6) infinite alternate}.lp-n{animation:lp-n 4s steps(4) infinite alternate}"
     "@keyframes lp-m{to{transform:translateX(12px)}}@keyframes lp-n{to{transform:translateY(-6px)}}"
@@ -819,11 +913,14 @@ CSS = (
     # the gulls roost with nightfall and come back once Pazu's doves have crossed (202 s)
     ".lp-R{animation:lp-R 240s steps(8) infinite}@keyframes lp-R{25%,87%{opacity:1}32%,84%{opacity:0}}"
     # moments on that cycle, each parked and unchanging outside its slot (--d = when it starts):
-    #   day    10 flaptters . 33 crystal and core
+    #   day    0 the bird perched on the robot's arm . 10 flaptters . 33 crystal and core . 34 the fox-squirrel runs to
+    #          Sheeta's head (36.5 the bird flies home to its nest)
     #   dusk   46 the soldier robot flies home, left to right (on screen from 56, gone behind Laputa by 64)
-    #   night  74 Goliath, searchlights on . 93 and 153 crystal, core and ruin stones (93 also the beam) . 104 lightning
-    #   dawn   182 Pazu's trumpet . 184 pigeons (the gulls stay roosted until 202)
-    #   day    190 Tiger Moth . 213 crystal and core . 224 lightning
+    #   night  74 Goliath, searchlights sweeping . 93 and 153 crystal, core, ruin stones and the fallen robot's eye
+    #          (93 also the beam) . 104 lightning
+    #   dawn   182 Pazu's trumpet . 184 pigeons (the gulls stay roosted until 202) . 198 the fox comes home
+    #   day    190 Tiger Moth . 212 the bird flies back to the robot's arm . 213 crystal and core . 224 lightning
+    #          . 226 the fox pops up on the robot's head
     ".lp-mx{animation:lp-x 240s var(--d) steps(200) infinite}.lp-mw{animation:lp-x 240s var(--d) steps(400) infinite}.lp-my{animation:lp-y 240s var(--d) steps(40) infinite}"
     ".lp-pf{animation:lp-r 240s var(--d) steps(40) infinite}"
     "@keyframes lp-x{7.5%,to{transform:translateX(var(--x))}}@keyframes lp-y{7.5%,to{transform:translateY(var(--y))}}"

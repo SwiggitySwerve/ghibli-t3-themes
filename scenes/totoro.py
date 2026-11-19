@@ -3,8 +3,9 @@
 Totoro waits under a too-small umbrella beside Satsuki, who carries sleeping Mei on her back, in the cone
 of a lone streetlamp. The Catbus gallops in along the power line, Totoro hands Satsuki a leaf-wrapped
 bundle and leaps up into it, and it gallops on along the wire. Then Dad's bus pulls in,
-Dad comes round the front of it, and the bus leaves the three of them standing in the rain. See the
-timeline above CSS.
+Dad comes round the front of it, and the bus leaves the three of them standing in the rain. Around them: an
+owl in the camphor that the Catbus flushes, the Catbus seen again far off on the hill, and (every other loop,
+so the full cycle is 240 s) a ginger stray padding along the road to sit by a puddle. See the timeline above CSS.
 
 Static layer (one PNG): sky, clouds, hills, paddies and the Kusakabe house, camphor, forest, torii, fox
 and Jizo statues, lit bushes, pole + lamp, road with baked lamp light, the bus-stop sign, Satsuki + Mei.
@@ -309,6 +310,25 @@ PLATE = [     # the stop's name down the plate: 稲荷前 (Inari-mae), simplifie
     "ckckcckkc",
     "ccccccccc",
 ]
+FOX = [       # the shrine's stone fox, seated in profile facing the gate: tall ears, a pointed snout, red bib, and
+              # the big plume of a tail rising behind its back, on a plinth
+    ".......c.c...",
+    ".c.....cccc..",
+    "ccc....ckccc.",
+    "ccc....cccD..",
+    ".cc...drrr...",
+    ".ccd.ddrrrc..",
+    "..cddddddcc..",
+    "...ddddddcc..",
+    "...dddddc.c..",
+    "...dddddc.c..",
+    "..ddddddc.c..",
+    "..dddddcc.cc.",
+    "CCCCCCCCCCCCC",
+    ".DDDDDDDDDDD.",
+    ".CCCCCCCCCCC.",
+    "CCCCCCCCCCCCC",
+]
 
 
 def girls(cv):
@@ -388,9 +408,10 @@ def draw():
         cv.rect(x + 2, 118, 1, RD - 118, RED)
     cv.paint(["..c..", ".CCC.", "CCCCC", ".kYk.", ".kYk.", "ccccc", "..c..", "..c..", "..c..", ".ccc.", "ccccc"],
              {"c": ROAD, "C": POLE, "k": ROAD_D, "Y": YEL}, 68, 127)   # stone lantern
-    cv.paint([".c..c..", ".cc.cc.", ".ccccc.", ".dcccccc", "d.rrrr.", "dddrrc.", "dddccc.", "dddccc.", ".ddccc.",
-              "CCCCCCC", ".CCCCC.", ".CCCCC.", "CCCCCCC"],
-             {"c": ROAD_L, "d": ROAD, "r": RED, "C": ROAD}, 57, 125)       # the Inari fox in its red bib, on its plinth
+    cv.paint(FOX, {"c": ROAD_L, "d": ROAD, "k": BLACK, "r": RED, "C": ROAD, "D": ROAD_D}, 54, 122)   # the Inari fox
+    cv.rect(204, 73, 23, 1, CAM_D)                             # the owl's branch, reaching out of the camphor
+    cv.rect(204, 74, 13, 1, CAM_D)
+    cv.set(225, 72, CAM_D)
     cv.rect(79, 134, 19, 2, FOR2)                              # stone steps up to the shrine
     cv.rect(77, 136, 23, 2, ROAD_D)
     # bushes behind the stop, then the lamp light baked over everything so far
@@ -661,6 +682,68 @@ DAD = [       # Dad off the bus, with no umbrella (he forgot it: that is why the
     "......pp.pp........",
     ".....kkk.kkk.......",
 ]
+OWL = [       # a horned owl on the camphor's branch, facing us: ear tufts, a pale facial disc, amber eyes, barred
+              # breast, and a warm rim on its left where the streetlamp catches it (it sits partly over the crown)
+    "R........d",
+    "RR......dd",
+    ".Rbbbbbbd.",
+    "Rbffffffbd",
+    "RfYYffYYfd",
+    "RfYkffkYfd",
+    "Rbffooffbd",
+    "Rbbbfobbbd",
+    "RbLLLLLLbd",
+    "RbLlLLlLbd",
+    ".RbLLLLbd.",
+    ".RbLlLlbd.",
+    "..dddddd..",
+    "...t..t...",
+]
+FLY = [       # the owl in flight, side on, facing right: a broad wing raised | swept down
+    "..bbbb...........|.................",
+    "...bbbbb.........|.................",
+    "....bbbbbb.......|.................",
+    ".....bbbbbbb.ddd.|.............ddd.",
+    "...ddbbbbbbbdfffd|...ddbbbbbbbdfffd",
+    "dddLLLLLLLLLdfYfd|dddLLLLLLLLLdfYfd",
+    "..dLLLLLLLLLddfo.|..dLbbbbbbbbddfo.",
+    "....ddddddddd....|....dbbbbbbbbd...",
+    ".................|......bbbbbbb....",
+    ".................|........bbbb.....",
+]
+OPAL = {"R": "#c89a66", "d": "#2e2422", "b": "#5e4636", "f": "#977656", "L": "#b0926a", "l": "#5e4636", "Y": "#ffc844",
+        "k": "#140c08", "o": "#2a1e1a", "t": "#977656"}
+OWX, OWY = 208, 60       # perched owl top-left (inside portrait's x 100-220 crop); talons grip the branch on row 73
+FARCAT = [    # the Catbus far off, bounding up the hill beyond the paddies: lit windows, eyes, a grin
+    "............O..O.",
+    ".T..OOOOOOOOOOOO.",
+    "TT.OAAOAAOAAOOYOY",
+    "T..OAAOAAOAAOOOOO",
+    "...OOOOOOOOOOWWW.",
+    "...S.S..S.S..S.S.",
+    "....S....S....S..",
+]
+WALK = [      # a ginger stray walking left, side on: legs together | legs apart
+    "o.o.........|o.o.........",
+    "ooo........t|ooo........t",
+    "oyo.......t.|oyo.......t.",
+    "oooooooooot.|oooooooooot.",
+    ".ooSoSoSooo.|.ooSoSoSooo.",
+    "..oo....oo..|.o.o....o.o.",
+    ".o..o..o..o.|.o.o....o.o.",
+]
+SIT = [       # sitting by the puddle, turned to face us, its eyes catching the lamp
+    "o...o....",
+    "ooooo....",
+    "oyoyo....",
+    "ooWoo....",
+    ".ooo.....",
+    ".oSoo..t.",
+    "ooSooo.t.",
+    "oo.ooott.",
+]
+CPAL = {"o": "#d88a40", "S": "#9a5428", "t": "#d88a40", "y": "#ffe070", "W": "#f0d0a0"}
+CATX = 268               # where it stops and sits, just in front of the right-hand puddle; feet on row GY+3
 SPAL = {"w": "#fff", "k": "#012"}
 CX_, CY_ = 112, GY - 14  # chu-Totoro image top-left (his body starts 3 px in, after the sack)
 BX, BY = 104, GY - 9     # chibi-Totoro top-left
@@ -672,6 +755,22 @@ def art(rows, pal, x, y, attr=""):
     cv = Canvas(len(rows[0]), len(rows))
     cv.paint(rows, pal, 0, 0)
     return png(cv, 0, 0, cv.w, cv.h, (x, y), attr)
+
+
+PLINK = ((), ((4, 1), (4, 2), (4, 3)), ((4, 4), (3, 5), (5, 5)), ((4, 2), (2, 4), (6, 4)), ((4, 1), (1, 3), (7, 3)),
+         ((0, 3), (8, 3)), ((0, 5), (8, 5)))   # frames of one drop, impact at (4, 5): blank, falling, the hit, a
+                                              # rebound droplet and two flung out in arcs, falling away down the slope
+
+
+def plink():
+    """Drops bounce off Totoro's umbrella: a 9x6 viewport whose impact pixel sits on the canopy, with the drop's
+    frames side by side behind it (tt-Pf slides them past at 10 fps); tt-P moves it between three spots."""
+    rows = [[" "] * 9 * len(PLINK) for _ in range(6)]
+    for k, pts in enumerate(PLINK):
+        for x, y in pts:
+            rows[y][9 * k + x] = "w"
+    return (f"<g class='tt-P'><svg x='148' y='74' width='9' height='6' viewBox='148 74 9 6'><g class='tt-Pf'>"
+            f"{runs([''.join(r) for r in rows], {'w': '#cef'}, 148, 74)}</g></svg></g>")
 
 
 def cast():
@@ -689,7 +788,7 @@ def cast():
     side = (f"<g class='tt-g'><path fill='#fff' d='M{t - 9} {e + 10}h2v2h-2zm16 0h2v2h-2z'/>"
             f"<path fill='#012' d='M{t - 8} {e + 10}h2v2h-2zm16 0h2v2h-2z'/></g>")
     return (f"<g class='tt-h'><g class='tt-b'><g class='tt-e'>{ear}</g>{png(cv, TX - 24, GY - 72, 48, 72)}"
-            f"{side}{blink}{wide}{grin}<path class='tt-P' stroke='#cef' d='M151 78.5h1m1 0h1m-2 1h1'/></g>"
+            f"{side}{blink}{wide}{grin}{plink()}</g>"
             # the drip that lands on his head rides with him when he hops
             f"<path class='tt-i' style='--d:.6;--y:7px' fill='#bdf' d='M{TX - 4} {GY - 59}h1v2h-1z'/></g>")
 
@@ -793,6 +892,44 @@ def rain():
     return out + "</g>"
 
 
+def far_side():
+    """The Catbus bounding up the far hill, in a nested <svg> viewport so it comes out from behind the right-hand
+    cedar (a beam here read as a grey staircase, so its lit windows and eyes carry it)."""
+    return (f"<svg x='252' y='60' width='68' height='40' viewBox='252 60 68 40'><g class='tt-X'>"
+            f"<g class='tt-m' style='animation-duration:.3s'>"
+            f"{runs(FARCAT, {'O': '#b84', 'A': '#f4c868', 'Y': '#fff4a0', 'T': '#885a3c', 'S': '#885a3c', 'W': '#f2eedc'}, 232, 80)}"
+            "</g></g></svg>")
+
+
+def stray():
+    """A ginger stray at road scale (12 px long against Satsuki's 27 px), first loop of each 240 s only: it pads in
+    from the right along the road, sits by the puddle looking out at us, then turns and pads back off. The walker's
+    two leg frames sit side by side in a 12 px viewport and swap by sliding (tt-cl); tt-C carries it, mirrored for
+    the way back, and hides it while the sitting pose (tt-Cs) shows."""
+    x, y = CATX, GY + 3 - len(WALK)
+    strip = Canvas(24, len(WALK))
+    strip.paint([r.replace("|", "") for r in WALK], CPAL, 0, 0)
+    return (f"<g class='tt-C'><svg x='{x}' y='{y}' width='12' height='{len(WALK)}' viewBox='{x} {y} 12 {len(WALK)}'>"
+            f"<g class='tt-cl'>{png(strip, 0, 0, 24, len(WALK), (x, y))}</g></svg></g>"
+            f"<g class='tt-Cs'>{art(SIT, CPAL, x, GY + 3 - len(SIT))}</g>")
+
+
+def owl():
+    """Perched on the branch at the camphor's right edge: blinks, watches the Catbus while it waits, flushes off over
+    the paddies as it sets off, and glides back after Dad's bus has gone. The flyer's two wing frames sit side by
+    side in a 15 px viewport and swap by sliding (tt-fl); tt-V carries it, mirrored for the way back."""
+    x, y = OWX, OWY
+    eyes = f"M{x + 2} {y + 4}h2v2h-2zm4 0h2v2h-2z"
+    perch = (f"<g class='tt-O'>{art(OWL, OPAL, x, y)}"
+             f"<g class='tt-og'><path fill='#ffc844' d='{eyes}'/><path fill='#140c08' d='M{x + 2} {y + 4}h1v1h-1zm4 0h1v1h-1z'/></g>"
+             f"<g class='tt-k' style='animation-duration:6.7s'><path fill='#977656' d='{eyes}'/><path stroke='#2e2422' d='M{x + 2} {y + 5}.5h2m2 0h2'/></g></g>")
+    strip = Canvas(34, 10)
+    strip.paint([r.replace("|", "") for r in FLY], OPAL, 0, 0)
+    fx, fy = x - 3, y + 1
+    return perch + (f"<g class='tt-V'><svg x='{fx}' y='{fy}' width='17' height='10' viewBox='{fx} {fy} 17 10'>"
+                    f"<g class='tt-fl'>{png(strip, 0, 0, 34, 10, (fx, fy))}</g></svg></g>")
+
+
 def sprites():
     """Back to front. Sprites always draw over the PNG, so the order here is the depth order. Depth on the
     road is the base row: a lower base is nearer, and the two vehicles that pull up at the stop are nearest."""
@@ -803,12 +940,14 @@ def sprites():
         [112 + (i * 13) % 34 for i in range(8)] + [DRY[1] + (i * 7) % 20 for i in range(6)]))
     drip = lambda x, y, n, d: f"<path class='tt-i' style='--d:{d};--y:{n}px' d='M{x} {y}h1v2h-1z'/>"
     return (
+        # 0. far off on the right: the Catbus on the hill
+        far_side()
         # 1. the water surface: puddle rings and the lamp's shimmer. Everything that moves draws over them.
-        f"<g stroke='#8ac'>{ring([(140, 152), (216, 148), (66, 151), (242, 152)])}</g>"
+        + f"<g stroke='#8ac'>{ring([(140, 152), (216, 148), (66, 151), (242, 152)])}</g>"
         f"<g stroke='#5f93ad'>{ring([(258, 118), (303, 128), (283, 132)], " style='animation-duration:3.3s'")}</g>"
         f"<path class='tt-o' style='animation-duration:1.7s' stroke='#fd7' d='M{LX - 7} 152.5h2m10 0h2m-9 2h2'/>"
-        # 2. the Catbus, up on the wire
-        + catbus()
+        # 2. the owl in the camphor, then the Catbus, up on the wire in front of the tree
+        + owl() + catbus()
         # 3. the lantern's flame
         + "<path class='tt-g' style='animation-duration:3.7s' fill='#d73' d='M70 130h1v2h-1z'/>"
         # 4. rain: in front of the scenery, behind the cast
@@ -825,6 +964,8 @@ def sprites():
           "<g class='tt-T'><g fill='#bdf' stroke='#bdf'>"
           f"<path class='tt-d' d='M{TX + 9} {WIRE + sag(TX + 9) + 1}h1v3h-1z'/>"
           f"<path class='tt-p' d='M{TX + 5} {GY - 69}.5h1m7 0h1m-7-2h1m3 0h1m-3-2h1'/>{drip(TX + 21, GY - 59, 56, 2.1)}</g></g></svg>"
+        # 5b. the stray, out on the road on the right
+        + stray()
         # 6. Satsuki: blink, a sideways glance at Totoro (and, later, at Dad); Mei breathing
         + f"<g class='tt-g' style='animation-duration:17s'><g id='tt-ey'><path fill='{SKIN}' d='M{sx + 7} {sy + 5}h1v2h-1zm5 0h1v2h-1z'/>"
           f"<path fill='#012' d='M{sx + 6} {sy + 5}h1v2h-1zm5 0h1v2h-1z'/></g></g><use class='tt-w' href='#tt-ey'/>"
@@ -851,26 +992,30 @@ SPRITES = sprites()
 # Timing. Ambient loops have short unrelated periods. The story runs once per 120 s:
 #     0-53 s   Totoro waits beside Satsuki, with the small Totoros at his feet
 #     5-13 s   a drop falls on his umbrella: wide eyes, grin, hop, a shower from the tree, the acorns sprout
+#    25-42 s   first loop of each 240 s only: a ginger stray pads in along the road, sits by the puddle, pads off
 #    45-53 s   and again (40 s cycle; the third time he is gone)
 #    53-61 s   the Catbus gallops in along the wire, beams first; the lamp stutters at 59 s; it waits overhead
-#    56-76 s   Satsuki looks up at it; Mei wakes (58-72 s)
+#    56-76 s   Satsuki looks up at it; Mei wakes (58-72 s); the owl watches it (61-70.6 s)
 #    61-62 s   Totoro hands Satsuki the bundle; he grins up at the Catbus (61-69 s), which glances down at him twice
 #    68-69 s   Totoro leaps up into the Catbus, umbrella and all; the small Totoros hop up after him
-#    70-77 s   it gallops on along the wire and out of frame
-#    77-84 s   rain
+#    70-77 s   it gallops on along the wire and out of frame; the owl flushes off over the paddies (70.6-73 s)
+#    78-85 s   the Catbus again, far off, bounding up the hill beyond the farmhouse
 #    84-91 s   Dad's bus pulls in
 #    94-96 s   Dad comes round the front of it; Satsuki looks up at him
 #    98-106 s  the bus pulls away
-#   106-116 s  the three of them; then Dad and the bundle fade out
+#   106-116 s  the three of them; then Dad and the bundle fade out; the owl glides back to its branch (108-113 s)
 #   117-120 s  Totoro and the small Totoros fade back in, and it starts again
 CSS = (
     # ambient
     ".tt-n,.tt-v path{animation:tt-n .6s steps(6) infinite}@keyframes tt-n{to{translate:0 48px}}"
     f".tt-b{{transform-origin:0 {GY}px;animation:tt-b 2.7s steps(3,jump-none) infinite alternate}}@keyframes tt-b{{to{{scale:1 1.02}}}}"
-    ".tt-k,.tt-g,.tt-w,.tt-r,.tt-p,.tt-d,.tt-i,.tt-a,.tt-o,.tt-S,.tt-N,.tt-D,.tt-H,.tt-P,.tt-Q,.tt-L,.tt-M,.tt-Y,.tt-K{opacity:0}"
-    # a drop plinks on his umbrella: one spark, three spots on the canopy, irregularly spaced in 4.3 s
-    ".tt-P{animation:tt-P 4.3s steps(1) infinite}@keyframes tt-P{0%{opacity:1;translate:0}4%{opacity:0;translate:0}"
-    "37%{opacity:1;translate:10px -1px}41%{opacity:0;translate:10px -1px}70%{opacity:1;translate:16px 1px}74%,to{opacity:0;translate:16px 1px}}"
+    ".tt-k,.tt-g,.tt-w,.tt-r,.tt-p,.tt-d,.tt-i,.tt-a,.tt-o,.tt-S,.tt-N,.tt-D,.tt-H,.tt-Q,.tt-L,.tt-M,.tt-Y,.tt-K,.tt-og,.tt-V,.tt-X,.tt-Cs{opacity:0}"
+    # drops bounce off his umbrella at three spots on the canopy, irregularly spaced in 4.3 s; each plays the
+    # drop's six frames at 10 fps, then rests on the blank one
+    ".tt-P{animation:tt-P 4.3s steps(1) infinite}@keyframes tt-P{37%{translate:7px -2px}70%,to{translate:14px 0}}"
+    ".tt-Pf{animation:tt-Pf 4.3s steps(1) infinite}@keyframes tt-Pf{"
+    + "".join(f"{p + 2.33 * k:.2f}%{{translate:{-9 * k if k < len(PLINK) else 0}px}}"
+              for p in (0, 37, 70) for k in range(1, len(PLINK) + 1)) + "}"
     ".tt-e{animation:tt-e 11s steps(1) infinite}@keyframes tt-e{62%,65%{translate:-1px 1px}63.5%,66.5%{translate:0}}"
     ".tt-g{animation:tt-g 23s steps(1) infinite}@keyframes tt-g{38%{opacity:1}56%{opacity:0}}"
     ".tt-k{animation:tt-k 7s steps(1) infinite}@keyframes tt-k{96%{opacity:1}}"
@@ -927,6 +1072,28 @@ CSS = (
     ".tt-D{animation:tt-D 120s steps(8) infinite}"
     "@keyframes tt-D{77.99%{opacity:0;translate:-48px}78%{opacity:1;translate:-48px}80%,96.5%{opacity:1;translate:0}97%,to{opacity:0}}"
     ".tt-S{animation:tt-S 120s steps(1) infinite}@keyframes tt-S{78%{opacity:1}96.5%{opacity:0}}"
+    # round 3. The owl: watches the waiting Catbus (60.7-70.6 s), flushes off over the paddies as it sets off (70.6-73 s),
+    # glides back, mirrored, after Dad's bus has gone (108-113.4 s); its wings beat by sliding a 2-frame strip
+    ".tt-og{animation:tt-og 120s steps(1) infinite}@keyframes tt-og{50.6%{opacity:1}58.83%{opacity:0}}"
+    ".tt-O{animation:tt-O 120s steps(1) infinite}@keyframes tt-O{58.83%{opacity:0}94.5%{opacity:1}}"
+    f".tt-V{{transform-origin:{OWX + 5.5}px {OWY + 6}px;animation:tt-V 120s steps(1) infinite}}"
+    "@keyframes tt-V{58.83%{opacity:1;translate:0;scale:1;animation-timing-function:steps(18)}"
+    "60.83%{opacity:1;translate:110px 14px;scale:1}60.84%{opacity:0;translate:110px -20px;scale:-1 1}"
+    "90%{opacity:1;translate:110px -20px;scale:-1 1;animation-timing-function:steps(27)}"
+    "94.5%{opacity:1;translate:0;scale:-1 1}94.51%,to{opacity:0;translate:0;scale:1}}"
+    ".tt-fl{animation:tt-fl .36s steps(1) infinite}@keyframes tt-fl{50%{translate:-17px}}"
+    # the Catbus far off, bounding up the hill (78-84.6 s)
+    ".tt-X{animation:tt-X 120s steps(1) infinite}"
+    "@keyframes tt-X{65%{opacity:1;translate:0;animation-timing-function:steps(45)}70.5%{opacity:1;translate:90px -8px}"
+    "70.51%,to{opacity:0;translate:90px -8px}}"
+    # the stray, 25-42.4 s into each 240 s cycle (so the second 120 s loop keeps that stretch quiet): pads in
+    # 54 px in 2 px steps (25-30.4 s), sits (30.4-37 s), pads back out mirrored (37-42.4 s)
+    f".tt-C{{transform-origin:{CATX + 6}px {GY}px;animation:tt-C 240s steps(1) infinite}}"
+    "@keyframes tt-C{0%{translate:54px}10.42%{translate:54px;animation-timing-function:steps(27)}12.67%{opacity:1;translate:0}"
+    "12.68%{opacity:0;translate:0}15.42%{opacity:1;translate:0;scale:-1 1;animation-timing-function:steps(27)}"
+    "17.67%{opacity:1;translate:54px;scale:-1 1}17.68%,to{opacity:1;translate:54px;scale:1}}"
+    ".tt-cl{animation:tt-cl .4s steps(1) infinite}@keyframes tt-cl{50%{translate:-12px}}"
+    ".tt-Cs{animation:tt-Cs 240s steps(1) infinite}@keyframes tt-Cs{12.67%{opacity:1}15.42%{opacity:0}}"
 )
 THEME = {
     "position": "center 50%",  # set by the main session for wide panes, which crop top and bottom (see wide.png)

@@ -1,7 +1,7 @@
 """Nausicaa of the Valley of the Wind: the valley seen from the edge of the Sea of Corruption.
 An Ohmu crawls across the jungle floor, its legs stepping in a wave and its armour plates rippling
 with them, a young one at its tail; Nausicaa escorts it on her Mehve with Teto on her shoulder; Lord
-Yupa watches from Kai, his horseclaw, with Kui behind under a pack; the castle with its great wind wheel and the windmills stand on golden hills behind, where three Valley girls wave; a fossil God Warrior stands in the far haze.
+Yupa watches from Kai, his horseclaw, with Kui behind under a pack, beside a shed Ohmu shell; the castle with its great wind wheel and the windmills stand on golden hills behind, where three Valley girls wave; a fossil God Warrior stands in the far haze.
 
 320x180. Static layers, so things can pass between them:
   draw()    sky gradient (the base PNG)
@@ -23,7 +23,8 @@ turn. Strips overlap by 1px, and offsets are only ever 0 or 1, so no gap can ope
 at its tail is rigid and takes quick short steps: its six legs are planted for 3 ticks and lifted
 for 1, each one tick behind the leg in front.
 
-The Ohmu and Nausicaa repeat every 60s, everything else every 120s. t = 0 is the still the build
+The Ohmu and Nausicaa repeat every 60s, the story every 120s, and three later moments every 240s, so the
+two halves of the loop differ. t = 0 is the still the build
 tools show and where the scene opens, so it is a quiet moment: she is drifting back and nothing else is
 under way. (Every story animation is delayed -105s from where it was first written: a whole number of
 the Ohmu's 1.5s strides and of the 15s wind cycle, so legs and rotor stills stay in step.)
@@ -35,10 +36,15 @@ the Ohmu's 1.5s strides and of the 15s wind cycle, so legs and rotor stills stay
                   her off (for 4.8s), and now and then she blinks
   21-32s          a yanma flies across
   42-84s          the Tolmekian fleet crosses behind the castle; the Ohmu's eyes flush red (55-73.5s) as it
-                  comes in, the young one's with them (calming 3.5s later), and calm to blue as it reaches
-                  Nausicaa; the wind dies with the rage (57.3-72.3s: rotors, streamer and gusts stop), and as
-                  the eyes calm four golden feelers rise from its head towards her (71-84s)
+                  comes in, the young one's with them, and calm to blue as it reaches Nausicaa; the wind dies
+                  with the rage (57.3-72.3s: rotors, streamer and gusts stop, and Kai and Kui rear up, heads
+                  high and beaks open, as it rages past behind them), and as the eyes calm four golden feelers
+                  rise from its head towards her (71-84s). The young one stays red until it is out from behind
+                  the birds, and calms last (by 84s)
+  44.4-48.6s      a spore pod by the right-hand fungus bursts in a puff of spores (240s loop)
+  94.8s, 154.8s   the last lens left in the shed shell glints (240s loop)
   103-112s        the Valley gunship skims the fields
+  204-234s        spores fall like snow around Yupa (240s loop)
 Everything that travels moves in whole-pixel steps.
 """
 import base64, math, random, struct, zlib
@@ -185,7 +191,8 @@ def mountains(cv):
             cv.set(x, y, (WHITE if lit else N1) if snow else (M0 if lit else M1))
 
 
-MILLS = [(84, 80), (198, 84), (246, 80)]     # small windmills: tower x, hub y
+MILLS = [(84, 80, 8), (198, 85, 6), (246, 80, 8)]     # small windmills: tower x, hub y, sail radius (the middle one
+                                                    # smaller, so its sails stay clear of her bob on a full-height tower)
 
 
 def tower(cv, x, base, hub):
@@ -317,7 +324,7 @@ def mid():
     house(cv, 170, 99, 6)
     house(cv, 181, 101)
     house(cv, 262, 103, 6)
-    for x, hub in MILLS:
+    for x, hub, _ in MILLS:
         tower(cv, x, int(castle_hill(x)) + 2, hub)
     hill(cv, mid_hill, G1, G0)
     for dy in (4, 8, 12, 16):                          # furrows following the slope
@@ -523,6 +530,27 @@ def baby():
 BABY_EYES = [(-10, 139), (-10, 143), (-7, 142)]   # the young one's eyes on the canvas, as img(baby(), -32, OB - 12) places them
 
 
+SHELL_X, SHELL_B = 92, 133         # the shed shell's left end and base row; its last lens at (SHELL_X + 5, SHELL_B - 9)
+
+
+def shell(cv):
+    """A shed Ohmu shell lying on the jungle floor, head to the left: bleached pale, the plates the same as
+    the live one's, the eye sockets empty and dark but for one lens, and the hollow underside open."""
+    hs = [6, 8, 10, 11, 12, 13, 13, 13, 13, 12, 12, 12, 11, 11, 11, 10, 10, 9, 9, 8, 8, 7, 7, 6, 5, 5, 4, 3, 2, 2]
+    for x, h in enumerate(hs):
+        for y in range(SHELL_B - h, SHELL_B):
+            d = y - SHELL_B + h
+            seam = x > 9 and x % 4 == 1
+            cv.set(SHELL_X + x, y, "#3e4660" if seam or x == 9 else "#d0d8e2" if d == 0 or (x > 9 and x % 4 == 2 and d < 5)
+                   else "#a8b4c6" if d < 3 else "#5e6a84" if y > SHELL_B - 4 else "#8492aa")
+        if 2 < x < 27:                                  # the hollow, open along the bottom
+            cv.rect(SHELL_X + x, SHELL_B - 2 - (x % 3 == 0), 1, 3, J1)
+    for x, y in [(2, -7), (6, -6), (3, -4)]:            # empty sockets
+        cv.rect(SHELL_X + x, SHELL_B + y, 2, 2, J1)
+    cv.rect(SHELL_X + 4, SHELL_B - 10, 3, 3, "#9fd8f6")  # the one lens left in it
+    cv.set(SHELL_X + 4, SHELL_B - 10, WHITE)
+
+
 def tendrils():
     """The golden feelers the Ohmu raise when they calm, drawn behind the shell and risen 24px through it.
     Drawn as they stand at the peak: k px above the shell top, each bows outward from its root, then curves in
@@ -550,7 +578,7 @@ def jungle():
     GLOWS.clear()
     for x, top, hw in [(22, 112, 9), (128, 116, 8), (178, 119, 6), (236, 116, 8), (292, 109, 10), (306, 118, 6)]:
         fungus(cv, x, 133, top, hw, J4, T1, J3, lights=False)
-    for x, h in [(38, 12), (104, 10), (154, 12), (204, 9), (224, 9)]:
+    for x, h in [(38, 12), (154, 12), (204, 9), (224, 9)]:
         puff(cv, x, 133, h, P0, P1)
     for x in range(W):
         y = int(round(floor(x)))
@@ -564,6 +592,7 @@ def jungle():
                     cv.set(x, y, c)
     fungus(cv, 254, 142, 109, 13, J2, T1, J3)
     tubes(cv, 262, 141, (6, 10, 13, 7), J2, T1)
+    shell(cv)
     return cv
 
 
@@ -839,6 +868,11 @@ KUI = ["." * 24] * 3 + [
     ".....KKKKKKKKKKKKKk.....",
 ] + YUPA[14:]
 KUI2 = {**{i: KUI[i][:15] + YUPA2[i][15:] for i in range(3, 9)}, 15: YUPA2[15]}    # head dip, tail flick
+# Both birds rear up while the raging Ohmu passes behind them: head thrown 2px higher on a stretched neck,
+# beak agape (columns 15-23 of rows 0-10 replace the idle head).
+ALARM = [".........", "..KKKK...", ".KKKKKK.y", ".KKeKKKyy", ".KKKKK...", "..KKKkyyy", "..KKk....",
+         "..KKk....", "..KKk....", "..KKk....", ".KKKk...."]
+YUPA_A, KUI_A = ([r[:15] + ALARM[i] if i < 11 else r for i, r in enumerate(f)] for f in (YUPA, KUI))
 
 
 # Tolmekian warships, far off and hazy, heading left: a heavy transport and two corvettes.
@@ -899,9 +933,51 @@ def fleet():
     return cv
 
 
+def burst():
+    """A spore pod bursting, as sheet frames (frame 0 blank): a split and a flash, then a puff of spores that
+    spreads, rises and thins on the wind. The pod sits at (24, 40) of each 48px frame."""
+    r = random.Random(7)
+    ps = [(math.radians(r.uniform(-175, -5)), r.uniform(.5, 1), r.random()) for _ in range(40)]
+    frames = [Canvas(48, 48) for _ in range(8)]
+    f = frames[1]
+    for a in range(0, 360, 30):                         # the split pod and its flash
+        f.set(24 + round(8 * math.cos(math.radians(a))), 39 + round(7 * math.sin(math.radians(a))), T2)
+    f.rect(22, 35, 5, 1, "#eafffa")
+    f.rect(24, 33, 1, 5, "#eafffa")
+    f.rect(23, 34, 3, 3, WHITE)
+    for k, (R, up, wind, keep) in enumerate([(6, 3, 0, 1), (11, 6, 1, 1), (16, 10, 3, .85), (19, 15, 5, .65), (21, 20, 8, .45),
+                                             (22, 25, 11, .28)]):
+        f = frames[k + 2]
+        if k < 3:                                       # the dense heart of the puff, dithered, thinning
+            for y in range(-4 - 2 * k, 5 + 2 * k):
+                for x in range(-4 - 2 * k, 5 + 2 * k):
+                    if x * x + y * y <= (4 + 2 * k) ** 2 and (x + y) % 2 == 0 and (k < 2 or (x * 3 + y) % 4 == 0):
+                        f.set(24 + x + wind, 40 - up - 3 + y, P1)
+        for th, sp, h in ps:
+            if h < keep:
+                x, y = round(24 + math.cos(th) * R * sp + wind * sp), round(40 + math.sin(th) * R * sp * .8 - up)
+                n = 2 if k < 5 and h < .7 else 1
+                f.rect(x, y, n, n, "#eafffa" if h < .5 else T2)
+    return frames
+
+
+def glint():
+    """The lens catching the light: frame 0 blank, then a 4-point star that grows and shrinks."""
+    frames = [Canvas(9, 9) for _ in range(4)]
+    for f, n in zip(frames[1:], (2, 4, 2)):
+        f.rect(4 - n, 4, 2 * n + 1, 1, "#eafffa")
+        f.rect(4, 4 - n, 1, 2 * n + 1, "#eafffa")
+        f.rect(3, 3, 3, 3, WHITE) if n > 2 else f.set(4, 4, WHITE)
+    return frames
+
+
 def discs(which):
     """Eyes as pixel-snapped circles (no fill of their own, so each <use> can colour them)."""
     return "".join(f"<circle cx='{x}.5' cy='{y}.5' r='{r + .1}'/>" for x, y, r in which)
+
+
+_r = random.Random(11)
+SNOW = [sorted((_r.randrange(18, 116), _r.randrange(62, 104), 2) for _ in range(20)) for _ in range(2)]   # two layers of falling motes
 
 
 def spores(seed, n, w=1):
@@ -914,6 +990,7 @@ def build():
     back, far, fore = mid(), jungle(), near()
     glints = sorted(GLOWS)[::3]
     d8, small = sheet(turn(8, 4, 6), "id='nc-i'")
+    d6, small6 = sheet(turn(6, 4, 6), "id='nc-i6'")
     d14, wheel = sheet(turn(14, 8, 4), "id='nc-wh'")
     # the wind dies while the herd rages: at T1 every rotor is swapped for a still of the frame it shows then, and
     # 15s later (a whole number of turns of each) the still is swapped back on that same frame, so neither swap
@@ -929,7 +1006,7 @@ def build():
                 f"viewBox='{x} 0 {w} {body.h}'><use href='#nc-om'/></svg>{extra}</g>")
 
     return [
-        f"<defs>{small}{wheel}"
+        f"<defs>{small}{small6}{wheel}"
         f"<image id='nc-om' width='{body.w}' height='{body.h}' href='data:image/png;base64,{png(body)}'/>"
         f"<path id='nc-lg' stroke='#5a7aa6' stroke-width='2' d='M4 {OB - 4}v5m7-5v5'/>"
         f"<path id='nc-lb' stroke='#5a7aa6' d='M.5 {OB - 2}v3m-12-3v3'/>"
@@ -944,18 +1021,21 @@ def build():
         # the great wind wheel, the small mills (one shared sheet), the watchtower's streamer and the wind gusts
         # running across the fields (.nc-wa); then their stills and a limp streamer, shown while the wind is dead
         "<g class='nc-wa'>" + window(CX - 14, CY - 14, d14, "<use class='nc-x' style='--n:4' href='#nc-wh'/>")
-        + "".join(window(x - 8, hub - 8, d8, f"<use class='nc-x' {play(6, dur)} href='#nc-i'/>") for (x, hub), dur in mills)
+        + "".join(window(x - r, hub - r, 2 * r + 1, f"<use class='nc-x' {play(6, dur)} href='#nc-i{'' if r > 6 else 6}'/>")
+                  for (x, hub, r), dur in mills)
         + "<g stroke='#d43'><path class='nc-a' d='M145 47.5h7m-6 1h7'/>"
         "<path class='nc-a' style='animation-delay:-.45s' d='M145 47.5h5m-3 1h6m-3 1h4'/></g>"
         "<g stroke='#fffad0'>"
         f"<path class='nc-u' d='{dots([(66, 108, 10), (80, 116, 14), (58, 121, 9), (84, 109, 6)])}'/>"
         f"<path class='nc-u' style='animation-delay:2s' d='{dots([(216, 106, 12), (232, 112, 9), (222, 119, 10), (206, 113, 6)])}'/></g></g>"
         "<g class='nc-ws'>" + window(CX - 14, CY - 14, d14, f"<use href='#nc-wh' x='-{still(3, 4)}'/>")
-        + "".join(window(x - 8, hub - 8, d8, f"<use href='#nc-i' x='-{still(dur, 6)}'/>") for (x, hub), dur in mills)
+        + "".join(window(x - r, hub - r, 2 * r + 1, f"<use href='#nc-i{'' if r > 6 else 6}' x='-{still(dur, 6)}'/>")
+                  for (x, hub, r), dur in mills)
         + "<path stroke='#d43' d='M145.5 48v6m1-6v3'/></g>",
         # the gunship and its shadow on the fields, then the jungle behind the Ohmu
         f"<g class='nc-g'>{img(stamp(GUN, GPAL), -1145, 96)}<path stroke='#7d5628' opacity='.5' d='M-1139 114.5h16'/></g>",
         img(far),
+        strip(glint(), SHELL_X + 1, SHELL_B - 13, "nc-gl"),
         # the Ohmu: ground shadows, the young one trailing at its tail (six legs on a quick 4-tick stride of
         # their own, see .nc-k), nine leg pairs (beat 0 at the head), six plates and the head shield, whose
         # group also carries the eye glow (circles): two blue sets pulsing out of phase, and the red set that
@@ -963,8 +1043,8 @@ def build():
         f"<g class='nc-h'><path fill='#110f28' d='M4 {OB}h{OL - 6}v2h-{OL - 6}zM-30 {OB}h26v1h-26z'/>"
         + "".join(f"<use class='nc-l nc-k' style='--d:{i}' href='#nc-lb' x='{-6 - 4 * i}'/>" for i in range(3))
         + img(baby(), -32, OB - 12)
-        # the young one's eyes go red with the herd's, and calm a few seconds after them
-        + f"<g class='nc-r' style='animation-delay:-41s'><path stroke='#f2503c' stroke-width='2' "
+        # the young one's eyes go red with the herd's, and stay red until it has come out from behind Kai (calm by 84s)
+        + f"<g class='nc-r' style='animation-delay:-30s'><path stroke='#f2503c' stroke-width='2' "
           f"d='{dots([(x, y + 1, 2) for x, y in BABY_EYES], '')}'/><path stroke='#ffd8b8' d='{dots([(x, y, 1) for x, y in BABY_EYES])}'/></g>"
         + "".join(f"<use class='nc-l' style='--d:{d}' href='#nc-lg' x='{OL - PW * (d + 1)}'/>" for d in range(9))
         # the golden feelers, behind the shell, rise through it as the eyes calm (.nc-gt)
@@ -978,19 +1058,29 @@ def build():
               "<g class='nc-r' fill='#f2503c' stroke='#7a1c2a'><use href='#nc-ea'/><use href='#nc-eb'/>"
               f"<path stroke='#ffd8b8' d='{dots([(x - 1 - (r > 3), y - 1 - (r > 3), 1 + (r > 3)) for x, y, r in EYES])}'/></g>")
         + "</g>",
-        strip([stamp(KUI, UPAL), stamp([KUI2.get(i, r) for i, r in enumerate(KUI)], UPAL)], UX - 20, UY - 1, "nc-x",
-              "--n:2;animation-duration:3.7s"),
-        strip([stamp(YUPA, UPAL), stamp([YUPA2.get(i, r) for i, r in enumerate(YUPA)], UPAL)], UX, UY, "nc-x", "--n:2;animation-duration:2.8s"),
+        # Kui and Yupa on Kai at their idle; while the wind is dead (the Ohmu raging past behind them) both birds rear up
+        "<g class='nc-wa'>" + strip([stamp(KUI, UPAL), stamp([KUI2.get(i, r) for i, r in enumerate(KUI)], UPAL)], UX - 20, UY - 1,
+                                    "nc-x", "--n:2;animation-duration:3.7s")
+        + strip([stamp(YUPA, UPAL), stamp([YUPA2.get(i, r) for i, r in enumerate(YUPA)], UPAL)], UX, UY, "nc-x", "--n:2;animation-duration:2.8s")
+        + "</g><g class='nc-ws'>" + "".join(
+            f"<g class='nc-hp'{d}>{img(stamp(rows, UPAL), x, y)}</g><path class='nc-du' stroke='#9488cc'{d} "
+            f"d='{dots([(x, y + 20, 2), (x + 16, y + 20, 2), (x - 2, y + 21, 5), (x + 15, y + 21, 5), (x - 3, y + 22, 6), (x + 15, y + 22, 7)])}'/>"
+            for rows, x, y, d in [(KUI_A, UX - 22, UY - 1, " style='animation-delay:-.45s'"), (YUPA_A, UX - 2, UY, "")]) + "</g>",
         # Nausicaa: run (.nc-n) > sway > bob > facing (.nc-v) > flutter sheet and Teto
         f"<g class='nc-n'><g class='nc-m'><g class='nc-b'><g class='nc-v'>"
-        # a puff from the jet as she sets off, left behind the engine (.nc-jp)
-        f"<g class='nc-jp'><path stroke='#fff' d='{dots([(MX + 30, MY + 20, 3), (MX + 28, MY + 21, 7), (MX + 27, MY + 22, 8)])}'/>"
-        f"<path stroke='#a9c6e4' d='{dots([(MX + 28, MY + 23, 6)])}'/></g>"
         f"{strip([mehve(i) for i in range(3)], MX, MY, 'nc-x', '--n:3;animation-duration:.75s')}"
+        # a puff from the jet as she sets off, blown back from under the wing's trailing edge (.nc-jp)
+        f"<g class='nc-jp'><path stroke='#fff' d='{dots([(MX + 24, MY + 38, 4), (MX + 20, MY + 39, 9), (MX + 12, MY + 39, 3), (MX + 19, MY + 40, 4), (MX + 11, MY + 40, 4), (MX + 3, MY + 39, 4), (MX + 2, MY + 40, 6)])}'/>"
+        f"<path stroke='#98bbdc' d='{dots([(MX + 23, MY + 40, 6), (MX + 20, MY + 41, 7), (MX + 12, MY + 41, 2), (MX + 2, MY + 41, 6)])}'/></g>"
         f"{img(stamp(TETO, NPAL), MX + FX - 8, MY + FY - 15, cls='nc-o')}"
         # her blink: lids over both eyes for a moment
         f"<path class='nc-bl' stroke='#d99c78' d='M{MX + FX + 1} {MY + FY - 17}.5h2m1 0h2'/></g></g></g></g>",
         img(fore),
+        # a spore pod bursts (44.4s); spores fall like snow around Yupa (204-234s)
+        strip(burst(), 210, 110, "nc-pb"),
+        "".join(f"<g class='nc-sn'{d}><path stroke='#eafffa' stroke-width='2' d='{dots(m, '')}'/>"
+                f"<path stroke='#3aa6a8' d='{dots([(x + 1, y - 1, 1) for x, y, _ in m])}'/></g>"
+                for d, m in [("", SNOW[0]), (" style='animation-delay:-234s'", SNOW[1])]),
         # glints on the spore pods and filament tips, then spores drifting up
         f"<path class='nc-p' stroke='#eafffa' d='{dots([(x, y, 1) for x, y in glints])}'/>",
         "<g stroke='#aef4e8'>" + "".join(
@@ -1030,10 +1120,13 @@ CSS = (
     # Nausicaa: 56px with the Ohmu in 7s (clear of the mill and the cap), then 53s drifting back the other way, facing left
     ".nc-n{animation:nc-n 60s steps(56) -45.75s infinite}@keyframes nc-n{11.667%{transform:translateX(56px)}}"
     f".nc-v{{transform-origin:{MX + FX}px 0;animation:nc-v 60s steps(1) -45.75s infinite}}@keyframes nc-v{{11.667%{{transform:scaleX(-1)}}}}"
-    # the jet puff: 8px back from the engine in 0.9s as it fades
-    ".nc-jp{opacity:0;animation:nc-jp 60s -45.75s infinite}@keyframes nc-jp{from{opacity:1;animation-timing-function:steps(8)}1.5%,to{opacity:0;transform:translateX(-8px)}}"
+    # the jet puff: 12px back from under the wing in 1.5s as it fades
+    ".nc-jp{opacity:0;animation:nc-jp 60s -45.75s infinite}@keyframes nc-jp{from{opacity:1;animation-timing-function:steps(12)}2.5%,to{opacity:0;transform:translateX(-12px)}}"
     ".nc-m{animation:nc-m 9s steps(4) infinite alternate}@keyframes nc-m{to{transform:translateX(4px)}}"
     ".nc-b{animation:nc-b 5.2s steps(4) infinite alternate}@keyframes nc-b{to{transform:translateY(4px)}}"
+    # the startled birds, stepped back 2px, hop 3px and land every 1.1s, kicking up dust as they land
+    ".nc-hp{animation:nc-hp 1.1s steps(1) infinite}@keyframes nc-hp{from{transform:translateY(-3px)}30%,to{transform:none}}"
+    ".nc-du{opacity:0;animation:nc-du 1.1s steps(1) infinite}@keyframes nc-du{30%{opacity:1}60%{opacity:0}}"
     ".nc-bl{opacity:0;animation:nc-bl 6.3s steps(1) infinite}@keyframes nc-bl{97%{opacity:1}}"
     ".nc-o{animation:nc-o 13s steps(1) infinite}@keyframes nc-o{82%{transform:translate(6px,-9px)}}"
     ".nc-e,.nc-p{animation:nc-e 3.6s infinite alternate}.nc-e2{animation-delay:-3.6s}.nc-p{animation-duration:5s}"
@@ -1043,5 +1136,17 @@ CSS = (
     # the feelers rise 24px over 4s from 71s, hold, and fade by 84s (-49s puts 71s at 0%)
     ".nc-gt{opacity:0;animation:nc-gt 120s -49s infinite}"
     "@keyframes nc-gt{from{animation-timing-function:steps(24)}3.33%,8.33%{opacity:1;transform:translateY(-24px)}10.83%,to{opacity:0;transform:translateY(-24px)}}"
+    # new moments run on a 240s loop, so its two 120s halves differ. A spore pod bursts at 44.4s, when no Ohmu is near
+    # it (one sheet frame per .6s)
+    ".nc-pb{animation:nc-pb 240s steps(1) infinite}@keyframes nc-pb{18.5%{transform:translateX(-1px)}18.75%{transform:translateX(-2px)}"
+    "19%{transform:translateX(-3px)}19.25%{transform:translateX(-4px)}19.5%{transform:translateX(-5px)}19.75%{transform:translateX(-6px)}"
+    "20%{transform:translateX(-7px)}20.25%{transform:none}}"
+    # the shed shell's lens glints at 94.8s and 154.8s, when no Ohmu is in front of it
+    ".nc-gl{animation:nc-gl 240s steps(1) infinite}@keyframes nc-gl{39.5%,39.875%,64.5%,64.875%{transform:translateX(-1px)}"
+    "39.625%,64.625%{transform:translateX(-2px)}39.75%,64.75%{transform:translateX(-3px)}40%,65%{transform:none}}"
+    # spores fall like snow around Yupa, 2px a second: one layer 204-228s, the other 6s behind it
+    ".nc-sn{opacity:0;animation:nc-sn 240s infinite}@keyframes nc-sn{85%{opacity:0;transform:none;animation-timing-function:steps(6)}"
+    "86.25%{opacity:1;transform:translateY(6px);animation-timing-function:steps(34)}"
+    "93.333%{opacity:1;transform:translateY(40px);animation-timing-function:steps(8)}95%,to{opacity:0;transform:translateY(48px)}}"
     ".nc-s{opacity:0;animation:nc-s 16s linear infinite}@keyframes nc-s{20%,70%{opacity:.9}to{transform:translate(8px,-42px)}}"
 )

@@ -28,8 +28,16 @@ The 120 s loop, in loop time (the scene opens 20 s in, see PH, so that Kiki star
              and he climbs away (gone by 70 s); 74-110 s he flies back across the sky behind Kiki
   dirigible  80-150 s, left to right behind the tower
   dinghy     sails in 60-108 s, goes about at 113 s, sails out by 180 s
-The steamer keeps its own 150 s period; the clock hands tick once a minute. Kiki's idle life (bob,
+  janitor    stops sweeping and leans on his brush while the bell swings (33-40 s and 63-70 s)
+The steamer crosses every 180 s (parked out of sight behind the hill while the train runs); the clock hands tick once a minute. Kiki's idle life (bob,
 bow / hair / hem / straw flutter, Jiji's tail, blinks, the radio swinging) runs throughout.
+
+Over that, a 360 s story cycle of three circuits (story time s = loop time, +120, +240):
+  1  the opening flight: music notes rise from the radio, s 34-50 (right of the chat column)
+  2  the birdcage delivery: the cage with the toy cat hangs from the broom instead of the radio,
+     s 111.6-231.6 (swapped at her turns low over the bay, so the change hides in the turn)
+  3  the freight train runs along the far shore into the hill behind the bakery, s 268-298
+At t=0 the story clock is at s=20.
 
 Big detailed sprites (Kiki, dirigible, boats, both Tombos) are small nested PNGs; their moving parts are
 two-frame overlays of stroked 1px runs. One parametrised keyframe (kk-t, driven by --x/--y/--t/--n/--d)
@@ -697,6 +705,13 @@ KIKI = art([
     "39:RRRRR",
 ], KW)
 RADIO = art(["3:B", "3:B", "0:RRRRRRR", "0:rrrrrrr", "0:rgggrwr", "0:rgggrrr", "0:rgggrrr", "0:RRRRRRR"], 7)
+# The birdcage with the stuffed black cat inside (the gift for the boy, the delivery that goes wrong): it
+# hangs where the radio does in the second circuit. y/Y brass bars, a red ribbon on the cord, the toy cat
+# (c, w eyes) behind the middle bar.
+CAGE = ["....B....", "...rBr...", "..yyyyY..", ".y..y..Y.", "y.c.y.c.Y", "y.ccycc.Y", "y.cwywc.Y", "y.ccycc.Y",
+        "y.ccycc.Y", "yyyyyyYYY", ".YYYYYYY."]
+# Music from the radio on the opening flight: an eighth note and a beamed pair, rising and fading
+NOTES = art(["6:nnnnnn", "6:n....n", "1:n 6:n....n", "1:nn 6:n....n", "1:n.n 5:nn...nn", "0:nn 5:nn...nn", "0:nn"], 12)
 part = lambda **rows: art([rows.get(f"r{i}", "") for i in range(KH)], KW)   # sparse overlay frame
 BOW = part(r0="31:rrrr"), part(r2="28:r", r3="28:r", r4="29:R")
 HAIR = part(r14="32:hh", r15="32:hh"), part(r12="33:hh", r13="32:hhh")
@@ -721,10 +736,10 @@ KX, KY = 44, 27
 # airship: W/L/M hull tones, D lettering, gondola and engine pod, r stripe and tail flash, y windows
 APAL = {"W": "#ffffff", "L": "#dfe6f2", "M": "#b4c0d8", "D": "#55607a", "r": "#dd2233", "y": "#ffdd88"}
 AX, AY = -100, 25   # parked off the left edge; low enough to show in wide panes (top 25px cropped)
-# gull: w body, g wings, d wingtips, o beak. Body is shared; the wings are two frames.
+# gull: w body, g wings, d wingtips, o beak. The raised wings, mirrored about row 3 (kk-F), are the
+# downstroke: one animated element per gull instead of a two-frame flip. The body is drawn over them.
 GPAL = {"w": "#ffffff", "b": "#aabbcc", "g": "#667788", "d": "#333344", "o": "#ffaa33"}
-GULL = (art(["", "", "", "5:wwwww 10:o", "5:bbbb"], 14), art(["0:dd 12:dd", "1:ggg 10:ggg", "3:ggg 8:ggg"], 14),
-        art(["", "", "", "3:gg", "1:gggg 9:gggg", "0:dd 12:dd"], 14))
+GULL = (art(["", "", "", "5:wwwww 10:o", "5:bbbb"], 14), art(["0:dd 12:dd", "1:ggg 10:ggg", "3:ggg 8:ggg"], 14))
 # moored boats: w white, b blue stripe, D dark, r red, t teal hull, y cabin light
 BPAL = {"w": "#ffffff", "b": "#335577", "D": "#222233", "r": "#dd2233", "t": "#33aa99", "y": "#ffdd88",
         "s": "#bbccdd"}
@@ -762,7 +777,7 @@ LX, LY = 100 + LILY[0], QUAY - 29 + LILY[1]
 LTAIL = art(["", "", "", "", "", "6:ww"], 9), art(["", "", "", "7:w", "7:w", "6:w"], 9)
 # the bakery's hanging sign: a pretzel (g gold, b its baked-brown underside)
 PRETZEL = art(["3:B", "1:gg 4:gg", "0:g 3:g 6:g", "0:g 2:g 4:g 6:g", "1:b 5:b", "2:bbb"], 7)
-PUFF = "h2v1h1v1h-1v1h-2v-1h-1v-1h1z"   # a 4x3 puff, rounded
+PUFF = "h3v1h1v2h-1v1h-3v-1h-1v-2h1z"   # a 5x4 puff, rounded
 WISP = art(["10:wwwwww", "7:wwwwwwwwwwww 22:www", "4:wwwwwwwwwwwwwwwwwwwwwwwww", "2:wwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
             "0:wwwwwwww 8:sssssssssssssssssssssssssss", "3:sssssssssssssssssssssssssss", "8:ssssssssssssss"], 36)
 CX, CY = CLOCK[0] + .5, CLOCK[1] + .5
@@ -791,6 +806,16 @@ SPARKLE = ([(20, 115, 3), (31, 116, 2), (25, 117, 3), (33, 118, 2)],
 # its run hidden behind the tree and chimney at x 100-108, which are redrawn over it (STEAM_END).
 STEAMER = art(["0:sss", "3:r", "2:wwww", "0:ddddddd"], 7)
 STEAM_Y, STEAM_END = 109, 102
+# The freight train Kiki rode into town on, running along the far shore towards Koriko (bow to the right)
+# in the third circuit and into the hill behind the bakery: a hay wagon (y, D its bed), two box cars
+# (R roof, r sides), the tender and engine (d, w lit cab window, l lamp), k wheels, s its smoke. Hazed with
+# distance. It sets off from off-canvas left (TRX) and stops hidden behind the hill patch (x 100-146).
+TRAIN = art(["25:ssss", "29:ssssss", "33:sssss", "36:sss", "1:yyyyyy 9:RRRRRRRR 18:RRRRRRR 31:dddd 38:d",
+             "0:yyyyyyyy 9:rrrrrrrr 18:rrrrrrr 26:ddddd 31:dwdddddddd", "0:DDDDDDDDk 9:rrrrrrrrk 18:rrrrrrrk 26:dddddddddddddddl",
+             "1:k 6:k 10:k 15:k 19:k 23:k 27:k 29:k 32:kk 35:kk 38:kk"], 42)
+TRPAL = {"y": "#e4cf86", "D": "#6a5a4a", "R": "#8e5450", "r": "#b26a5e", "d": "#3c4762", "w": "#ffdd88",
+         "l": "#ffeeaa", "k": "#2c3550", "s": "#eef2fa"}
+TRX = -44
 # The dinghy that tacks across the bay (w sail, D mast, r hull), bow to the right. Its lane is x<60, y 122-130.
 DINGHY = art(["4:D", "3:wD", "2:wwDw", "2:wwDww", "1:wwwDww", "1:wwwDwww", "4:D", "0:rrrrrrrrr", "1:rrrrrrr"], 9)
 DX, DY = 50, 122    # where it turns round
@@ -810,8 +835,8 @@ MOTHER = ["..hh...........", ".hhhh..........", ".hsss..........", ".hss........
 MX = 121           # in front of the bakery door
 
 k = lambda a: runs(a, PAL, KX, KY)
-gull = lambda i, x, y, d: (f"<g id='kk-u'>{runs(GULL[0], GPAL, 0, 0)}"
-                           f"{flip(runs(GULL[1], GPAL, 0, 0), runs(GULL[2], GPAL, 0, 0), '.5s')}</g>" if i == 0 else
+gull = lambda i, x, y, d: (f"<g id='kk-u'><g class='kk-F'>{runs(GULL[1], GPAL, 0, 0)}</g>{runs(GULL[0], GPAL, 0, 0)}</g>"
+                           if i == 0 else
                            f"<use href='#kk-u' x='{x}' y='{y}' style='--d:{d}s'/>")
 # spinning propeller: the hub is static and the blade blinks over it (the same two frames as a flip, one
 # animated element instead of two)
@@ -826,9 +851,11 @@ SPRITES = (
     # sun sparkle near the horizon
     + f"<path class='kk-f' style='--t:1.9s' stroke='#fff' d='{dashes(SPARKLE[0])}'/>"
       f"<path class='kk-f kk-g' style='--t:2.7s' stroke='#fff' d='{dashes(SPARKLE[1])}'/></g>"
-    # the far steamer, then the tree and chimney it disappears behind
-    + f"<g class='kk-t' style='--x:110px;--t:150s;--n:110'>{runs(STEAMER, {'s': '#bbccdd', 'r': '#dd2233', 'w': '#ffffff', 'd': '#334455'}, STEAM_END - 110, STEAM_Y)}</g>"
-    + patch(draw(), 100, 108, 109, 113)
+    # the freight train on the far shore (kk-T), then the far steamer, then the hill, trees and bakery
+    # roof they both disappear behind
+    + f"<g class='kk-T'>{runs(TRAIN, TRPAL, TRX, 104)}</g>"
+    + f"<g class='kk-S'>{runs(STEAMER, {'s': '#bbccdd', 'r': '#dd2233', 'w': '#ffffff', 'd': '#334455'}, STEAM_END - 110, STEAM_Y)}</g>"
+    + patch(draw(), 100, 104, 146, 113)
     # a cloud wisp drifting slowly across, high up
     + f"<g class='kk-t' style='--x:-420px;--t:520s;--n:420;--d:-150s'>{runs(WISP, {'w': '#ffffff', 's': '#ddeeff'}, 330, 4)}</g>"
     # clock hands: they start at ten past ten and then run at true speed, one tick a minute
@@ -837,7 +864,10 @@ SPRITES = (
     # the belfry bell, swinging while Kiki passes over the tower (kk-i)
     + f"<path class='kk-i' stroke='{GOLD}' d='M{TX - 1}.5 62v2'/>"
     # the janitor's deck brush, pushed to and fro a pixel (one element, kk-r)
-    + f"<g class='kk-r' style='--t:1.3s'>{runs(BRUSH[0], {'x': '#553322'}, JX + 6, 61)}</g>"
+    # and while the bell swings he stops and leans on it to watch her go over (kk-J hides the push, kk-K
+    # shows the resting brush)
+    + f"<g class='kk-J'><g class='kk-r' style='--t:1.3s'>{runs(BRUSH[0], {'x': '#553322'}, JX + 6, 61)}</g></g>"
+    + f"<g class='kk-K'>{runs(BRUSH[1], {'x': '#553322'}, JX + 5, 61)}</g>"
     # lighthouse and pier beacon, one path blinking together
     + f"<path class='kk-f' style='--t:4s' stroke='#ff8' d='M57 98.5h2M63 {QUAY - 8}.5h3'/>"
     # the dirigible crosses left to right, 80-150 s, behind the clock tower: its spire and roof are redrawn
@@ -864,9 +894,10 @@ SPRITES = (
       f"<path d='M{DX + 16} {DY + 9}h1'/></g></g>"
     # moored boats, bobbing out of step
     + f"<g class='kk-b'>{img(SAIL, BPAL, 8, 122)}</g><g class='kk-b' style='--d:-1.3s'>{img(TUG, BPAL, 40, 135)}</g>"
-    # chimney smoke over the bakery: two pale wisps that leave the chimney mouth small and swell as they fade
-    + "".join(f"<path class='kk-p'{d and f' style={chr(39)}--d:{d}{chr(39)}'} fill='#b4bfd3' d='M106 100{PUFF}'/>"
-              for d in ("", "-3.75s"))
+    # chimney smoke over the bakery: three soft blue-grey puffs, a value darker than the cloud behind, that
+    # leave the chimney mouth small and swell as they fade, so they read as one drifting plume
+    + "".join(f"<path class='kk-p'{d and f' style={chr(39)}--d:{d}{chr(39)}'} fill='#97a2bb' d='M106 99{PUFF}'/>"
+              for d in ("", "-2.5s", "-5s"))
     # Lily's tail
     + flip(runs(LTAIL[0], {"w": "#ffffff"}, LX, LY), runs(LTAIL[1], {"w": "#ffffff"}, LX, LY), "3.1s")
     # a glint sweeping across the right pane of the bakery's shop window now and then (kk-L)
@@ -906,12 +937,17 @@ SPRITES = (
     # Kiki: flight path across (kk-x) and up and down (kk-w), mirrored when she flies left (kk-m), bob (kk-y)
     + "<g class='kk-x'><g class='kk-w'><g class='kk-m'><g class='kk-y'>"
     + img(KIKI, PAL, KX, KY)
-    + flip(k(BOW[0]), k(BOW[1]), ".5s") + flip(k(HAIR[0]), k(HAIR[1]), ".7s") + flip(k(HEM[0]), k(HEM[1]))
-    + flip(k(TAIL[0]), k(TAIL[1]), "2.6s") + flip(k(STRAW[0]), k(STRAW[1]), ".4s")
+    # wind flutter as two pairs (bow with straw, hair with hem), so four flips cost four elements, not eight
+    + flip(k(BOW[0]) + k(STRAW[0]), k(BOW[1]) + k(STRAW[1]), ".5s") + flip(k(HAIR[0]) + k(HEM[0]), k(HAIR[1]) + k(HEM[1]), ".7s")
+    + flip(k(TAIL[0]), k(TAIL[1]), "2.6s")
     + f"<g class='kk-k'>{k(EYE)}</g><g class='kk-k' style='--t:3.7s'>{k(CATEYE)}</g>"
     + f"<g class='kk-l'>{k(GLANCE)}</g>"
     + f"<g class='kk-a'>{k(ARMD)}</g><g class='kk-z'>{flip(k(WAVE[0]), k(WAVE[1]), '.8s')}</g>"
-    + f"<g class='kk-r'>{runs(RADIO, PAL, KX + 55, KY + 27)}</g>"
+    # what hangs from the broom: the radio, or in the second circuit the birdcage (kk-R / kk-C, swapped as
+    # she turns low over the bay, so the change hides in the turn); notes rise from the radio early on
+    + f"<g class='kk-r'><g class='kk-R'>{runs(RADIO, PAL, KX + 55, KY + 27)}</g>"
+      f"<g class='kk-C'>{runs(CAGE, PAL, KX + 54, KY + 27)}</g></g>"
+    + f"<g class='kk-Q'><g class='kk-N'>{runs(NOTES, {'n': '#221133'}, KX + 51, KY + 13)}</g></g>"
     + "</g></g></g></g>"
 )
 PH = "-20s"
@@ -931,15 +967,27 @@ CSS = (
     ".kk-y{animation:kk-y 2.8s steps(3) infinite alternate}@keyframes kk-y{to{translate:0 3px}}"
     ".kk-f{animation:kk-o var(--t,.6s) var(--d,0s) steps(1) infinite}.kk-g{animation-delay:calc(var(--d,0s) - var(--t,.6s)/2)}"
     "@keyframes kk-o{50%{opacity:0}}"
+    ".kk-F{transform-origin:0 3px;animation:kk-F .5s var(--d,0s) steps(1) infinite}@keyframes kk-F{50%{scale:1 -1}}"
     # Kiki's wave to Tombo, 50-56 s: the resting arm hides and the waving one shows
     f".kk-a,.kk-z{{animation:kk-a 120s {PH} steps(1) infinite}}.kk-z{{opacity:0;animation-name:kk-z}}"
     "@keyframes kk-a{42%{opacity:0}47%{opacity:1}}@keyframes kk-z{42%{opacity:1}47%{opacity:0}}"
     ".kk-k{animation:kk-k var(--t,5.3s) steps(1) infinite}@keyframes kk-k{96%{opacity:0}}"
+    # The 360 s story cycle, three circuits (s = loop time + 0, 120, 240): 1 the opening flight, the radio
+    # playing (notes s 34-50, once the radio is right of the chat column); 2 the birdcage delivery (cage s 111.6-231.6, between her turns low over the
+    # bay); 3 the freight train along the far shore (s 268-298) while she is high over the town.
+    f".kk-R,.kk-C{{animation:kk-R 360s {PH} steps(1) infinite}}.kk-C{{opacity:0;animation-name:kk-C}}"
+    "@keyframes kk-R{31%{opacity:0}64.33%{opacity:1}}@keyframes kk-C{31%{opacity:1}64.33%{opacity:0}}"
+    f".kk-Q{{opacity:0;animation:kk-Q 360s {PH} steps(1) infinite}}@keyframes kk-Q{{9.44%{{opacity:1}}13.89%{{opacity:0}}}}"
+    f".kk-T{{animation:kk-T 360s {PH} steps(144) infinite}}@keyframes kk-T{{74.44%{{translate:0}}82.78%,to{{translate:144px}}}}"
+    # the steamer: 180 s, crossing in 140 s then parked behind the hill patch for 40 s; phased (-77 s) so
+    # the train's run (t mod 180 = 68-98) falls inside its parked window (t mod 180 = 63-103)
+    ".kk-S{animation:kk-S 180s -77s steps(110) infinite}@keyframes kk-S{77.78%,to{translate:110px}}"
+    ".kk-N{animation:kk-N 2.4s steps(6) infinite}@keyframes kk-N{from{opacity:0}25%{opacity:1}to{translate:0 -6px;opacity:0}}"
     # a two-position rock, a pixel to the left and back, each held for --t (pretzel sign, radio, brush, Osono's hand)
     ".kk-r{animation:kk-r var(--t,1.4s) steps(2) infinite alternate}@keyframes kk-r{from{translate:-1px}to{translate:1px}}"
     # smoke: each wisp leaves the chimney mouth small, then drifts up and left, swelling as it fades
     ".kk-p{opacity:0;transform-box:fill-box;transform-origin:50% 100%;animation:kk-p 7.5s var(--d,0s) steps(25) infinite}"
-    "@keyframes kk-p{from{scale:.5}12%{opacity:.75}to{translate:-12px -22px;scale:2}}"
+    "@keyframes kk-p{from{scale:.5}10%{opacity:.8}to{translate:-12px -22px;scale:2}}"
     # Jiji's glance: hidden, then shown for the last 15% of an 11 s cycle
     ".kk-l{opacity:0;animation:kk-l 11s 4s steps(1) infinite}@keyframes kk-l{85%{opacity:1}}"
     # the shop-window glint, every 19 s: three positions a pixel apart over about 0.8 s
@@ -949,6 +997,8 @@ CSS = (
     + "".join(",".join(f"{s + .5 * i:g}%" for s in (27.5, 52.5) for i in range(12) if i % m == j) + f"{{translate:{v}}}"
               for m, j, v in ((4, 0, "1px"), (4, 2, "-1px"), (2, 1, "0")))
     + "}"
+    f".kk-J,.kk-K{{animation:kk-J 120s {PH} steps(1) infinite}}.kk-K{{opacity:0;animation-name:kk-K}}"
+    "@keyframes kk-J{27.5%,52.5%{opacity:0}33.5%,58.5%{opacity:1}}@keyframes kk-K{27.5%,52.5%{opacity:1}33.5%,58.5%{opacity:0}}"
     # the pram mother: 108 s out of the bakery door, 5px/s along the quay, 8.8 s in at her own door (104px on),
     # hidden in between
     f".kk-M{{animation:kk-M 120s {PH} infinite}}@keyframes kk-M{{from{{translate:60px;animation-timing-function:steps(44)}}"
