@@ -3,7 +3,8 @@
     python -I nyx/build.py
 
 Each theme is the stock Nyx theme (base/nyx.json) with motion CSS appended:
-- nyx-aurora-ocean: aurora glow, local flares, stars + the generated particle ocean (gen_ocean.py)
+- nyx-aurora-ocean: aurora glow, local flares, stars, the baked teal stream (teal-stream.css,
+                    from tools/bake_teal.mjs) + the generated particle ocean (gen_ocean.py)
 - nyx-animated:     "Aurora Pulse", shared motion layers + variant-aurora.css
 - nyx-wave-streams: "Data Streams", shared motion layers + variant-streams.css
 The file names are the theme ids T3 uses, so they match already-installed copies.
@@ -25,7 +26,7 @@ def run(*args):
 ocean = os.path.join(OUT, "variant-ocean.css")
 run("gen_ocean.py", ocean)
 for theme_id, name, css in [
-    ("nyx-aurora-ocean", "Nyx · Aurora Ocean", ["nyx-aurora-ocean.css", ocean]),
+    ("nyx-aurora-ocean", "Nyx · Aurora Ocean", ["nyx-aurora-ocean.css", "teal-stream.css", ocean]),
     ("nyx-animated", "Nyx · Aurora Pulse", ["nyx-common.css", "variant-aurora.css"]),
     ("nyx-wave-streams", "Nyx · Data Streams", ["nyx-common.css", "variant-streams.css"]),
 ]:
