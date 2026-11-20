@@ -1,0 +1,38 @@
+
+/* ---- Nyx · Aurora Ocean (still sky): the ocean keeps moving, the sky holds
+   still. Every sky layer is frozen at a typical moment of its animation,
+   rather than at its first frame, and the flares (invisible between flares)
+   are dropped. Each moving sky layer meant compositing the whole window again
+   on every step; with only the ocean moving, T3 Code measured about 69% GPU
+   in Task Manager on a 3440x1440 window, against about 90% with the sky
+   moving too. ---- */
+.dark [data-slot="sidebar-wrapper"]::before,
+.dark [data-slot="sidebar"][data-side="left"]::before,
+.dark [data-slot="sidebar"][data-side="left"]::after,
+.dark [data-slot="sidebar-inset"]::before {
+  animation: none !important;
+  will-change: auto !important;
+}
+
+/* aurora glow a quarter of the way into its sweep, at middling brightness
+   and hue (hue-rotate 4deg is close enough to none to drop the filter) */
+.dark [data-slot="sidebar"][data-side="left"]::before {
+  opacity: 0.55;
+  transform: translate3d(-6.5%, -0.5%, 0) scale(1.14) rotate(-1deg);
+  filter: none;
+}
+
+/* stars at their average twinkle */
+.dark [data-slot="sidebar"][data-side="left"]::after {
+  opacity: 0.6;
+}
+
+/* teal stream at mid shimmer, resting on the right edge */
+.dark [data-slot="sidebar-inset"]::before {
+  opacity: 0.8;
+}
+
+.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::before,
+.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::after {
+  display: none;
+}

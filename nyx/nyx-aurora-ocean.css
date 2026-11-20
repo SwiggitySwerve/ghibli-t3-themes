@@ -33,11 +33,15 @@
   will-change: transform, opacity;
 }
 
-/* 2. aurora glow: flows and shifts hue; brightness only drifts gently now */
+/* 2. aurora glow: flows and shifts hue; brightness only drifts gently now.
+   The art copy is blurred, brightened and saturated ahead of time by
+   tools/bake_glow.mjs (glow.css sets the image): a live blur on this layer,
+   which is larger than the window, was the most expensive thing in the theme.
+   Only the hue drift is still a live filter. */
 .dark [data-slot="sidebar"][data-side="left"]::before {
   background: var(--a) right bottom / var(--w) auto no-repeat;
   transform-origin: 42% 45%;
-  filter: blur(14px) brightness(1.45) saturate(1.6);
+  filter: hue-rotate(-16deg);
   mix-blend-mode: screen;
   animation:
     nyx-flow 36s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
@@ -153,8 +157,8 @@
 }
 
 @keyframes nyx-hue {
-  from { filter: blur(14px) brightness(1.45) saturate(1.6) hue-rotate(-16deg); }
-  to { filter: blur(14px) brightness(1.45) saturate(1.6) hue-rotate(24deg); }
+  from { filter: hue-rotate(-16deg); }
+  to { filter: hue-rotate(24deg); }
 }
 
 /* sways and swells out from the right edge (transform-origin), drifting a

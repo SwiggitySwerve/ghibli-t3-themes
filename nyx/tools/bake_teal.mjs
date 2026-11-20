@@ -10,14 +10,12 @@
 // Recolouring maps each pixel's brightness through a teal palette, greener
 // toward the streak tips on the left and bluer toward the band on the right,
 // so the stream has more colour depth than a flat hue shift.
-import { spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromeEval } from "./chrome_eval.mjs";
 
 const NYX = join(dirname(fileURLToPath(import.meta.url)), "..");
-const CHROME = process.env.CHROME ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
 
 const baseCss = JSON.parse(readFileSync(join(NYX, "base", "nyx.json"), "utf8")).css;
 const art = baseCss.match(/--a:\s*url\((data:image\/png;base64,[A-Za-z0-9+/=]+)\)/)[1];
@@ -72,29 +70,11 @@ const bake = `(async () => {
   return c.toDataURL("image/webp", 0.75);
 })()`;
 
-const dir = mkdtempSync(join(tmpdir(), "nyx-bake-"));
-const port = 9500 + Math.floor(Math.random() * 400);
-const chrome = spawn(CHROME, ["--headless=new", `--user-data-dir=${join(dir, "profile")}`, `--remote-debugging-port=${port}`, "about:blank"], { stdio: "ignore" });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-try {
-  let targets;
-  for (let i = 0; i < 60 && !targets?.length; i++) {
-    try { targets = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).filter((t) => t.type === "page"); } catch { await sleep(200); }
-  }
-  const ws = new WebSocket(targets[0].webSocketDebuggerUrl);
-  await new Promise((r) => (ws.onopen = r));
-  const reply = new Promise((r) => (ws.onmessage = (e) => r(JSON.parse(e.data))));
-  ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression: bake, awaitPromise: true, returnByValue: true } }));
-  const m = await reply;
-  ws.close();
-  const url = m.result?.result?.value;
-  if (!url?.startsWith("data:image/webp")) throw new Error(`bake failed: ${JSON.stringify(m).slice(0, 300)}`);
-  const out = join(NYX, "teal-stream.css");
-  writeFileSync(out, `\n/* teal aurora stream image, baked by tools/bake_teal.mjs */\n.dark [data-slot="sidebar-inset"]::before { background-image: url(${url}); }\n`);
-  console.log(`wrote ${out}: image ${url.length} chars`);
-} finally {
-  const exited = chrome.exitCode !== null ? Promise.resolve() : new Promise((r) => chrome.once("exit", r));
-  chrome.kill();
-  await exited;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-}
+const url = await chromeEval(bake);
+if (!url?.startsWith("data:image/webp")) throw new Error("bake failed");
+const out = join(NYX, "teal-stream.css");
+writeFileSync(out, `
+/* teal aurora stream image, baked by tools/bake_teal.mjs */
+.dark [data-slot="sidebar-inset"]::before { background-image: url(${url}); }
+`);
+console.log(`wrote ${out}: image ${url.length} chars`);
