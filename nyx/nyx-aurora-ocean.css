@@ -6,14 +6,20 @@
    sidebar-wrapper, so they paint in document order (bottom to top):
    1. wrapper::before               stock sky art, slow brightness breathe
    2. sidebar[left]::before         aurora glow: blurred, brightened art copy
-   3. sidebar-gap::before           local flare A  (color-dodge spots)
-   4. sidebar-gap::after            local flare B  (four spots)
-   5. sidebar[left]::after          twinkling stars
-   6. sidebar-inset::before         teal nebula, mid right
-   7. sidebar-inset::after          digital ocean (variant-ocean.css)
-   8. wrapper::after                static LED grid on top
-   The sidebar and its gap have no transform and no stacking context, so
-   fixed positioning still resolves to the viewport.                       */
+   3. sidebar[left]::after          twinkling stars
+   4. sidebar-inset::before         teal aurora stream, right edge
+   5. sidebar-inset::after          digital ocean (variant-ocean.css)
+   6. wrapper::after                static LED grid on top
+   The sidebar has no transform and no stacking context, so fixed
+   positioning still resolves to the viewport.
+
+   Cost: every moving layer is composited again over the whole window on each
+   step, so the sky layers use only opacity and transform (no live filters, no
+   blend modes that need an extra pass) and step at 10 fps (step_motion.py);
+   the ocean steps at 20 inside its SVG. On a 3440x1440 window with an Intel
+   iGPU that keeps T3 Code under 50% GPU. Two earlier effects were dropped for
+   it: the colour-dodge flares on the nebula (two more full-window layers,
+   each copying the backdrop) and the glow's live hue drift.              */
 
 .dark [data-slot="sidebar-wrapper"]::before {
   animation: nyx-base-breathe 17s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
@@ -21,8 +27,6 @@
 
 .dark [data-slot="sidebar"][data-side="left"]::before,
 .dark [data-slot="sidebar"][data-side="left"]::after,
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::before,
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::after,
 .dark [data-slot="sidebar-inset"]::before,
 .dark [data-slot="sidebar-inset"]::after {
   content: "";
@@ -33,55 +37,25 @@
   will-change: transform, opacity;
 }
 
-/* 2. aurora glow: flows and shifts hue; brightness only drifts gently now.
-   The art copy is blurred, brightened and saturated ahead of time by
-   tools/bake_glow.mjs (glow.css sets the image): a live blur on this layer,
-   which is larger than the window, was the most expensive thing in the theme.
-   Only the hue drift is still a live filter. */
+/* 2. aurora glow: flows across the sky and breathes. The art copy is
+   blurred, brightened and saturated ahead of time by tools/bake_glow.mjs
+   (glow.css sets the image), with its darkness turned into transparency, so
+   it lightens the sky under normal blending much as screen blending did,
+   without the extra pass a blend mode costs on a layer larger than the
+   window. */
 .dark [data-slot="sidebar"][data-side="left"]::before {
   background: var(--a) right bottom / var(--w) auto no-repeat;
   transform-origin: 42% 45%;
-  filter: hue-rotate(-16deg);
-  mix-blend-mode: screen;
   animation:
     nyx-flow 36s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
-    nyx-glow-breathe 23s ease-in-out infinite alternate,
-    nyx-hue 37s ease-in-out infinite alternate;
-}
-
-/* 3, 4. local flares: two spots per layer (four on B) sit on the purple band.
-   color-dodge only brightens pixels that already hold light, so a flare
-   lights its patch of cloud (and the stars in it) while black sky stays
-   black. Each layer flares, then drifts down the band and fades, on its own
-   coprime period, so different parts of the cloud light up at different
-   times. */
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::before,
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::after {
-  mix-blend-mode: color-dodge;
-  opacity: 0;
+    nyx-glow-breathe 23s ease-in-out infinite alternate;
 }
 
 .dark [data-slot="sidebar-inset"]::before {
   mix-blend-mode: screen;
 }
 
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::before {
-  background-image:
-    radial-gradient(13% 11% at 48% 12%, #b0a2ffc0, #7b6cff45 45%, #0000 75%),
-    radial-gradient(11% 10% at 26% 60%, #b0a2ffa8, #7b6cff3a 45%, #0000 75%);
-  animation: nyx-flare 11s ease-in-out infinite;
-}
-
-.dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::after {
-  background-image:
-    radial-gradient(12% 10% at 38% 33%, #e3a0ffc0, #c050e845 45%, #0000 75%),
-    radial-gradient(10% 9% at 60% 4%, #e3a0ffa8, #c050e83a 45%, #0000 75%),
-    radial-gradient(12% 11% at 31% 46%, #a8c0ffc0, #6f8cff45 45%, #0000 75%),
-    radial-gradient(10% 9% at 19% 72%, #a8c0ffa8, #6f8cff3a 45%, #0000 75%);
-  animation: nyx-flare 14s ease-in-out -5s infinite;
-}
-
-/* 6. teal aurora: the same sky art as the purple glow, turned 90 degrees
+/* 4. teal aurora: the same sky art as the purple glow, turned 90 degrees
    clockwise and recoloured teal, pinned to the right edge of the screen. The
    art's band rises from lower left to upper right with streaks hanging under
    it, so turned, the band runs down the right side and the streaks reach in
@@ -89,8 +63,7 @@
    tools/bake_teal.mjs (teal-stream.css sets it), because a live blur and hue
    filter on this layer would be redone every frame. The box is the art's
    16:9 shape stood on end, 160vh tall, with its right edge on the viewport's
-   right edge; it sways and swells from that edge, so it stays on the right.
-   (Flare C used to live on this layer; its spots now sit on flare B.) */
+   right edge; it sways and swells from that edge, so it stays on the right. */
 .dark [data-slot="sidebar-inset"]::before {
   inset: auto;
   top: 50%;
@@ -106,7 +79,7 @@
     nyx-teal-breathe 31s ease-in-out -9s infinite alternate;
 }
 
-/* 5. twinkling stars */
+/* 3. twinkling stars */
 .dark [data-slot="sidebar"][data-side="left"]::after {
   inset: -12%;
   background-image:
@@ -120,7 +93,7 @@
   animation: nyx-counter 40s ease-in-out infinite alternate, nyx-twinkle 4s ease-in-out infinite;
 }
 
-/* 8. static LED grid on top, so every moving layer stays dotted */
+/* 6. static LED grid on top, so every moving layer stays dotted */
 .dark [data-slot="sidebar-wrapper"]::after {
   content: "";
   position: fixed;
@@ -137,9 +110,11 @@
   background: #000000a8 !important;
 }
 
+/* opacity over the black page rather than a brightness filter, which would
+   need its own pass over the whole window on every step */
 @keyframes nyx-base-breathe {
-  from { filter: brightness(0.8); }
-  to { filter: brightness(1.12); }
+  from { opacity: 0.8; }
+  to { opacity: 1; }
 }
 
 /* the nebula sweeps across the screen and back: it swells to its widest in the
@@ -154,11 +129,6 @@
 @keyframes nyx-glow-breathe {
   from { opacity: 0.4; }
   to { opacity: 0.7; }
-}
-
-@keyframes nyx-hue {
-  from { filter: hue-rotate(-16deg); }
-  to { filter: hue-rotate(24deg); }
 }
 
 /* sways and swells out from the right edge (transform-origin), drifting a
@@ -182,16 +152,6 @@
   100% { opacity: 0.66; }
 }
 
-/* flare in, flicker, then drift down-left along the band while fading;
-   idle (invisible) for the rest of the cycle, where the position resets */
-@keyframes nyx-flare {
-  0% { opacity: 0; transform: translate3d(2%, -2.5%, 0) scale(0.85); }
-  14% { opacity: 1; }
-  26% { opacity: 0.45; }
-  34% { opacity: 0.8; }
-  52%, 100% { opacity: 0; transform: translate3d(-2.5%, 3%, 0) scale(1.15); }
-}
-
 @keyframes nyx-counter {
   from { transform: translate3d(3%, -2%, 0); }
   to { transform: translate3d(-3%, 2%, 0); }
@@ -212,8 +172,6 @@
   .dark [data-slot="sidebar-wrapper"]::before,
   .dark [data-slot="sidebar"][data-side="left"]::before,
   .dark [data-slot="sidebar"][data-side="left"]::after,
-  .dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::before,
-  .dark [data-slot="sidebar"][data-side="left"] [data-slot="sidebar-gap"]::after,
   .dark [data-slot="sidebar-inset"]::before {
     animation: none !important;
   }

@@ -50,7 +50,7 @@ TAU = 2 * math.pi
 CRISP_S = 0               # rows at least this near skip anti-aliasing (0: all of them, see crisp_split)
 FPS = int(os.environ.get("NYX_FPS", "20"))  # inside the SVG, motion advances in steps at this rate:
                           # Chrome re-rasterizes the whole image only when a step lands
-RASTER = 0.5              # the ocean layer is drawn at this resolution and scaled up (see the CSS below)
+RASTER = float(os.environ.get("NYX_RASTER", "0.5"))  # the ocean layer is drawn at this resolution and scaled up (see the CSS below)
 NEAR_S = 0.35             # crossing rows at least this near get a body under their crests
 
 # The swell

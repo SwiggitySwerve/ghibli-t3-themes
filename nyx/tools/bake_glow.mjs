@@ -6,10 +6,17 @@
 // a live CSS filter means the GPU re-blurs a layer larger than the window on
 // every frame, which was the single largest cost in the theme. This tool does
 // the blur, brightness and saturation once on a canvas and writes the result
-// as a WebP; the theme keeps only a hue-rotate filter for the colour drift.
+// as a WebP.
 //
-// The blur radius is in art pixels: the CSS blur was 14px on art drawn about
-// 5.7 CSS px per art pixel (an ultrawide window), so about 2.4 art pixels.
+// The glow was screen-blended, which needs an extra pass over a layer larger
+// than the window on every step. Here each pixel's darkness becomes
+// transparency instead (alpha = its brightest channel, colour scaled up to
+// match), so normal blending lightens the sky by about as much.
+//
+// The image is half the art's size: it is a blur, and the half size keeps
+// the alpha channel (stored losslessly) small. The blur radius is in those
+// pixels: the CSS blur was 14px on art drawn about 5.7 CSS px per art pixel
+// (an ultrawide window), so about 2.4 art pixels or 1.2 here.
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,13 +30,22 @@ const url = await chromeEval(`(async () => {
   const img = new Image();
   img.src = ${JSON.stringify(art)};
   await img.decode();
-  const W = img.width, H = img.height;
+  const W = img.width / 2, H = img.height / 2;
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
-  ctx.filter = "blur(2.4px) brightness(1.45) saturate(1.6)";
-  ctx.drawImage(img, 0, 0);
-  // the CSS layer was transparent outside the art; keep the alpha the blur makes
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, W, H);
+  ctx.filter = "blur(1.2px) brightness(1.45) saturate(1.6)";
+  ctx.drawImage(img, 0, 0, W, H);
+  ctx.filter = "none";
+  const d = ctx.getImageData(0, 0, W, H), p = d.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const a = Math.max(p[i], p[i + 1], p[i + 2]);
+    for (let j = 0; j < 3; j++) p[i + j] = a ? Math.round(p[i + j] * 255 / a) : 0;
+    p[i + 3] = a;
+  }
+  ctx.putImageData(d, 0, 0);
   return c.toDataURL("image/webp", 0.8);
 })()`);
 if (!url?.startsWith("data:image/webp")) throw new Error("bake failed");
