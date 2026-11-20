@@ -8,7 +8,7 @@ T3 loads at most about 1.9 MB of theme files in total and silently skips the res
 
 ![Nyx · Aurora Ocean](nyx/previews/aurora-ocean.png)
 
-Motion layers on top of the [Nyx theme](https://github.com/Deepusleepy/t3-nyx-theme) by Deepusleepy (MIT, kept in `nyx/base/` with its license). Each one makes the sky breathe and the stars twinkle, adds its own effect, and keeps the background dark enough to read on.
+Motion layers on top of the [Nyx theme](https://github.com/Deepusleepy/t3-nyx-theme) by Deepusleepy (MIT, kept in `nyx/base/` with its license). They keep the background dark enough to read on.
 
 - **Nyx · Aurora Ocean**: a flowing aurora glow and a teal aurora stream over twinkling stars, and a particle ocean along the bottom. The ocean is a dense dotted swell with a cross-hatch mesh, crossed by two seas whose waves come in irregular sets. It comes in three tiers; GPU is Task Manager's figure for T3 Code on a 3440x1440 window with an Intel iGPU (static Nyx: about 2%):
 
@@ -19,13 +19,11 @@ Motion layers on top of the [Nyx theme](https://github.com/Deepusleepy/t3-nyx-th
   | Speed | `themes/nyx-aurora-ocean-speed.json` | as Balanced; sky at 8 fps; ocean at 16 fps | ~34% |
 
   `themes/nyx-aurora-ocean-still-sky.json` (**still sky**) is Balanced with the sky held still and only the ocean moving (~39%).
-- `themes/nyx-animated.json` (**Nyx · Aurora Pulse**): the aurora glow pulsing across the whole cloud.
-- `themes/nyx-wave-streams.json` (**Nyx · Data Streams**): three neon wave lines flowing along the cloud.
 
 Install one with `t3 theme set themes/<file>.json` (the file name is the theme id).
 
 Source, in `nyx/`:
-- `nyx-aurora-ocean.css`, `nyx-common.css`, `variant-*.css`: the motion CSS, appended after the stock Nyx CSS.
+- `nyx-aurora-ocean.css`: the motion CSS, appended after the stock Nyx CSS.
 - `gen_ocean.py`: generates the ocean, an animated SVG data URI. Its comments explain the wave model and why the rows are drawn the way they are (performance: crisp edges, motion stepped on one shared grid, optionally drawn at reduced resolution and scaled up). `NYX_FPS` and `NYX_RASTER` set its frame rate and resolution; `build.py` sets them per tier.
 - `build.py`: rebuilds the Nyx themes into `themes/` (`python -I nyx/build.py`). `build_nyx_animated.py` does the merge and enforces T3's 100,000-character CSS limit (50,000 before late 2026). `step_motion.py` puts the page animations of Aurora Ocean on stepped timing too.
 - `glow.css`, `teal-stream.css`: the aurora glow and teal stream images, pre-blurred and recoloured by `tools/bake_glow.mjs` and `tools/bake_teal.mjs` (headless Chrome), so the theme needs no live blur. `full.css` adds the Full tier's extra effects, and `still-sky.css` freezes the sky for the still-sky build.

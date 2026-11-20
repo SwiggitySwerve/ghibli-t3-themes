@@ -18,9 +18,6 @@ All of them: the aurora glow (image baked into glow.css by tools/bake_glow.mjs),
 stars, the teal stream (teal-stream.css, tools/bake_teal.mjs) and the
 generated particle ocean (gen_ocean.py).
 
-The other Nyx themes:
-- nyx-animated:     "Aurora Pulse", shared motion layers + variant-aurora.css
-- nyx-wave-streams: "Data Streams", shared motion layers + variant-streams.css
 The file names are the theme ids T3 uses, so they match already-installed copies.
 """
 import os
@@ -70,7 +67,5 @@ for theme_id, name, flags, css in [
     ("nyx-aurora-ocean-speed", "Nyx · Aurora Ocean (Speed)", sky("speed"), [*AURORA, oceans["speed"]]),
     ("nyx-aurora-ocean-still-sky", "Nyx · Aurora Ocean (still sky)", sky("balanced"),
      [*AURORA, oceans["balanced"], "still-sky.css"]),
-    ("nyx-animated", "Nyx · Aurora Pulse", [], ["nyx-common.css", "variant-aurora.css"]),
-    ("nyx-wave-streams", "Nyx · Data Streams", [], ["nyx-common.css", "variant-streams.css"]),
 ]:
     run("build_nyx_animated.py", *flags, os.path.join("base", "nyx.json"), os.path.join(THEMES, f"{theme_id}.json"), name, *css)
